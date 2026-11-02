@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -17,38 +19,28 @@ import logging
 import traceback
 import subprocess
 import multiprocessing
-import cPickle
+import pickle
 import tempfile
-from itertools import islice, izip, repeat
+from itertools import islice, repeat
 
 from . import LoggingWriter
 
 
-POOL = None
+def getPool(threads: int):
+    """Return an independently owned pool; callers must close/join it."""
+    return multiprocessing.get_context().Pool(threads) if threads > 1 else None
 
 
-def getPool(threads):
-    """ get / create pool """
-    global POOL
-    if POOL:
-        return POOL
-    elif threads > 1:
-        POOL = multiprocessing.Pool(threads)
-        return POOL
-    else:
-        return None
-
-
-def splitEvery(n, iterable):
-    """ split iterable into list blocks of size n """
+def splitEvery(n: int | None, iterable):
+    """Yield finite blocks, rejecting nonpositive block sizes."""
     if n is None:
-    	yield list(iterable)
-    else:
-	    i = iter(iterable)
-	    piece = list(islice(i, n))
-	    while piece:
-	        yield piece
-	        piece = list(islice(i, n))
+        yield list(iterable)
+        return
+    if n <= 0:
+        raise ValueError('Block size must be positive')
+    iterator = iter(iterable)
+    while piece := list(islice(iterator, n)):
+        yield piece
 
 
 def unpickleSequentially(plist):
@@ -57,29 +49,16 @@ def unpickleSequentially(plist):
     while plist or data:
         if not data:
             fname = plist.pop(0)
-            with open(fname) as f:
-                data = cPickle.load(f)
+            with open(fname, 'rb') as f:
+                data = pickle.load(f)
             os.unlink(fname)
         if data:
             yield data.pop(0)
 
 def parMapper(arg):
-    try:
-        # garbage collect so we can reuse memory
-        # when running on very large inputs
-        gc.collect()
-        return arg[1]['fun'](arg[0], *arg[1]['args'], **arg[1]['kwargs'])
-    except Exception as e:
-        logging.error("Exception when running %s:" % str(arg[1]['fun']))
-        logging.error('-'*60)
-        traceback.print_exc(file=LoggingWriter(logging.ERROR))
-        logging.error('-'*60)
-    except BaseException as e:
-        logging.error("Exception when running %s:" % str(arg[1]['fun']))
-        logging.error('-'*60)
-        traceback.print_exc(file=LoggingWriter(logging.ERROR))
-        logging.error('-'*60)
-    return None
+    """Let worker failures propagate to the parent instead of returning None."""
+    gc.collect()
+    return arg[1]['fun'](arg[0], *arg[1]['args'], **arg[1]['kwargs'])
 
 
 def runParallel(pool, fun, par, *args, **kwargs):
@@ -93,7 +72,7 @@ def runParallel(pool, fun, par, *args, **kwargs):
 
     """
     if pool:
-        result = pool.map(parMapper, izip(par, repeat( { "fun": fun, "args": args, "kwargs": kwargs } )))
+        result = pool.map(parMapper, zip(par, repeat( { "fun": fun, "args": args, "kwargs": kwargs } )))
     else:
         result = []
         for c in par:

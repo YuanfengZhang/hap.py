@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2016 Illumina, Inc.
 # All rights reserved.
 #
@@ -10,7 +12,7 @@
 # https://github.com/Illumina/licenses/blob/master/Simplified-BSD-License.txt
 
 
-from __future__ import division
+
 from math import log1p
 
 import numpy as np
@@ -65,4 +67,4 @@ def jeffreysCI(x, n, alpha=0.05):
     return (p, lower, upper)
 
 
-binomialCI = np.vectorize(jeffreysCI)
+binomialCI = np.vectorize(jeffreysCI, otypes=[float, float, float])

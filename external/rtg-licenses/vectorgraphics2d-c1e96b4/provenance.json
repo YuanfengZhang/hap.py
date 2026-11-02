@@ -1,0 +1,485 @@
+{
+  "source_url": "https://api.github.com/repos/eseifert/vectorgraphics2d/tarball/c1e96b4fb21a102d53e82e2f8d71b3ef5e0625e9",
+  "source_commit": "c1e96b4fb21a102d53e82e2f8d71b3ef5e0625e9",
+  "source_sha256": "33b4e95149806215fefc266b512eeea959af7fafd7bd61d642e2e3801af2c123",
+  "observed_license": "LGPL-3.0-or-later in VectorGraphics2D.java; all Java header scan listed separately",
+  "java_headers": [
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/Document.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/GraphicsState.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/Processor.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/Processors.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/SizedDocument.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/VectorGraphics2D.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/VectorHints.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/eps/EPSDocument.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/eps/EPSProcessor.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/eps/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/CommandSequence.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/MutableCommandSequence.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/AffineTransformCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/Command.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/CreateCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/DisposeCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/DrawImageCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/DrawShapeCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/DrawStringCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/FillShapeCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/Group.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/RotateCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/ScaleCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetBackgroundCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetClipCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetColorCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetCompositeCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetFontCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetHintCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetPaintCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetStrokeCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetTransformCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/SetXORModeCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/ShearCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/StateCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/TransformCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/TranslateCommand.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/commands/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/AbsoluteToRelativeTransformsFilter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/FillPaintedShapeAsImageFilter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/Filter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/GroupingFilter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/OptimizeFilter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/StateChangeGroupingFilter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/StreamingFilter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/filters/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/intermediate/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/DefaultPDFObject.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/PDFDocument.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/PDFObject.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/PDFProcessor.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/Page.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/PageTreeNode.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/Payload.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/Resources.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/Stream.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/TrueTypeFont.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/pdf/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/svg/SVGDocument.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/svg/SVGProcessor.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/svg/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/ASCII85EncodeStream.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/AlphaToMaskOp.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/Base64EncodeStream.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/DataUtils.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/FlateEncodeStream.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/FormattingWriter.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/GraphicsUtils.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/ImageDataStream.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/LineWrapOutputStream.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/PageSize.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/main/java/de/erichseifert/vectorgraphics2d/util/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/AllTests.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/GraphicsStateTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/ProcessorsTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/TestUtils.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/TestUtilsTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/VectorGraphics2DTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/eps/EPSProcessorTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/eps/EPSTests.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/intermediate/IRTests.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/intermediate/MutableCommandSequenceTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/intermediate/filters/AbsoluteToRelativeTransformsFilterTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/intermediate/filters/FillPaintedShapeAsImageFilterTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/intermediate/filters/FilterTests.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/intermediate/filters/GroupingFilterTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/intermediate/filters/StreamingFilterTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/package-info.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/pdf/PDFDocumentTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/pdf/PDFProcessorTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/pdf/PDFTests.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/pdf/PageTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/pdf/PageTreeNodeTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/pdf/StreamTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/svg/SVGProcessorTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/svg/SVGTests.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/util/ASCII85EncodeStreamTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/util/Base64EncodeStreamTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/util/DataUtilsTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/util/FormattingWriterTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/util/GraphicsUtilsTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/util/PageSizeTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/util/UtilTests.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/CharacterTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/ClippingTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/CmykColorTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/ColorTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/EmptyFileTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/FontTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/ImageTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/PaintTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/ShapesTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/StrokeTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/SwingExportTest.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/TestBrowser.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/TestCase.java",
+      "LGPL_3_or_later_header": true
+    },
+    {
+      "path": "eseifert-vectorgraphics2d-c1e96b4/src/test/java/de/erichseifert/vectorgraphics2d/visual/TransformTest.java",
+      "LGPL_3_or_later_header": true
+    }
+  ],
+  "limitations": [
+    "71 embedded candidate class bytes match; not a reproducible source-to-bytecode rebuild.",
+    "Does not establish remaining RPlot source identity.",
+    "Prior tested image does not contain these new materials."
+  ]
+}

@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Compare two som.py csv files
 
@@ -17,15 +18,15 @@ def csvread(filename):
             header = r
             continue
         rec = {}
-        for i in xrange(0, len(r)):
+        for i in range(0, len(r)):
             try:
                 try:
                     rec[header[i]] = float(r[i])
                 except:
                     rec[header[i]] = r[i]
             except:
-                print >> sys.stderr, "%i: %i / %i" % (rn, len(header), len(r))
-                print "%i: %i\n%s\n%s" % (rn, i, "\t".join(header), "\t".join(r))
+                print("%i: %i / %i" % (rn, len(header), len(r)), file=sys.stderr)
+                print("%i: %i\n%s\n%s" % (rn, i, "\t".join(header), "\t".join(r)))
                 raise
 
         data.append(rec)
@@ -43,9 +44,9 @@ def main():
     if len(data1) != len(data2) or len(data1) == 0:
         raise Exception("Data length mismatch, %i != %i" % (len(data1), len(data2)))
 
-    print "Comparing fields: %s" % str(header1)
+    print("Comparing fields: %s" % str(header1))
 
-    for i in xrange(0, len(data1)):
+    for i in range(0, len(data1)):
         rec1 = data1[i]
         rec2 = data2[i]
         for metric in header1:
@@ -57,7 +58,7 @@ def main():
                     raise Exception("Float mismatch in row %i: %g != %g" % (i, rec1[metric], rec2[metric]))
             else:
                 raise Exception("Type mismatch in row %i: %s != %s" % (i, str(rec1[metric]), str(rec2[metric])))
-    print "ok (%i records)" % len(data1)
+    print("ok (%i records)" % len(data1))
 
 
 if __name__ == '__main__':

@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -11,12 +13,13 @@
 # https://github.com/Illumina/licenses/blob/master/Simplified-BSD-License.txt
 
 import os
+import sys
 import subprocess
 import logging
 import pandas
 import tempfile
 import gzip
-import pipes
+import shlex
 
 import Tools
 
@@ -24,44 +27,58 @@ import Tools
 scriptDir = os.path.abspath(os.path.dirname(__file__))
 
 
-def runShellCommand(*args):
-    """ Run a shell command (e.g. bcf tools), and return output
+def runShellCommand(*args: str, binary: bool = False) -> str | bytes:
+    """Run literal argv stages separated by '|'; check every stage.
+
+    Stderr is spooled to local temporary files to avoid pipe deadlocks. Only
+    the final output is decoded; intermediate BCF/BGZF streams stay binary.
     """
-    qargs = []
-    for a in args:
-        if a.strip() != "|":
-            qargs.append(pipes.quote(a))
+    stages = [[]]
+    for arg in args:
+        if arg == '|':
+            if not stages[-1]:
+                raise ValueError('Empty pipeline stage')
+            stages.append([])
         else:
-            qargs.append("|")
+            stages[-1].append(os.fspath(arg))
+    if not stages[-1]:
+        raise ValueError('Empty command')
+    processes, errors = [], []
+    try:
+        for stage in stages:
+            logging.info(shlex.join(stage))
+            error = tempfile.TemporaryFile()
+            errors.append(error)
+            previous = processes[-1].stdout if processes else None
+            process = subprocess.Popen(stage, stdin=previous, stdout=subprocess.PIPE, stderr=error)
+            processes.append(process)
+            if previous is not None:
+                previous.close()
+        stdout, _ = processes[-1].communicate()
+        failures = []
+        for stage, process, error in zip(stages, processes, errors):
+            code = process.wait()
+            error.seek(0)
+            stderr = error.read().decode('utf-8', errors='replace')
+            if code:
+                failures.append(f'{shlex.join(stage)} exited {code}: {stderr}')
+        if failures:
+            raise RuntimeError('Pipeline failed: ' + '\n'.join(failures))
+        return stdout if binary else stdout.decode('utf-8')
+    finally:
+        for process in processes:
+            if process.poll() is None:
+                process.kill()
+            process.wait()
+            if process.stdout is not None:
+                process.stdout.close()
+        for error in errors:
+            error.close()
 
-    cmd_line = " ".join(qargs)
-    logging.info(cmd_line)
 
-    po = subprocess.Popen(cmd_line,
-                          shell=True,
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE)
-
-    stdout, stderr = po.communicate()
-
-    po.wait()
-
-    return_code = po.returncode
-
-    if return_code != 0:
-        raise Exception("Command line {} got return code {}.\nSTDOUT: {}\nSTDERR: {}".format(cmd_line, return_code, stdout, stderr))
-
-    return stdout
-
-
-def runBcftools(*args):
-    """
-    Wraps runShellCommand for compatibility.
-
-    :param args:
-    :return:
-    """
-    return runShellCommand('bcftools', *args)
+def runBcftools(*args: str, binary: bool = False) -> str | bytes:
+    """Run bcftools, returning text unless binary output is requested."""
+    return runShellCommand('bcftools', *args, binary=binary)
 
 
 def parseStats(output, colname="count"):
@@ -75,7 +92,7 @@ def parseStats(output, colname="count"):
             count = int(vx[3])
             result[name] = count
 
-    result = pandas.DataFrame(list(result.iteritems()), columns=["type", colname])
+    result = pandas.DataFrame(list(result.items()), columns=["type", colname])
     return result
 
 
@@ -85,15 +102,12 @@ def countVCFRows(filename):
     :return: number of rows
     """
     if filename.endswith(".gz"):
-        f = gzip.open(filename, "r")
+        f = gzip.open(filename, "rt", encoding="utf-8")
     else:
         f = open(filename, "r")
 
-    count = 0
-    for s in f:
-        if not s.startswith("#"):
-            count += 1
-    return count
+    with f:
+        return sum(1 for line in f if not line.startswith('#'))
 
 
 def concatenateParts(output, *args):
@@ -105,6 +119,8 @@ def concatenateParts(output, *args):
 
     This function will bcftools concat in a tree-like fashion to avoid this.
     """
+    if not args:
+        raise ValueError('At least one input part is required')
     to_delete = []
     try:
         if output.endswith(".bcf"):
@@ -124,12 +140,14 @@ def concatenateParts(output, *args):
             # block in chunks (TODO: make parallel)
             tf1 = tempfile.NamedTemporaryFile(suffix=outputext, delete=False)
             tf2 = tempfile.NamedTemporaryFile(suffix=outputext, delete=False)
+            tf1.close()
+            tf2.close()
             to_delete.append(tf1.name)
             to_delete.append(tf2.name)
             to_delete.append(tf1.name + ".csi")
             to_delete.append(tf2.name + ".csi")
-            half1 = [tf1.name] + list(args[:len(args)/2])
-            half2 = [tf2.name] + list(args[len(args)/2:])
+            half1 = [tf1.name] + list(args[:len(args)//2])
+            half2 = [tf2.name] + list(args[len(args)//2:])
             concatenateParts(*half1)
             runBcftools("index", tf1.name)
             concatenateParts(*half2)
@@ -154,7 +172,8 @@ def preprocessVCF(input_filename, output_filename, location="",
                   sample="SAMPLE",
                   filter_nonref=True,
                   convert_gvcf=False,
-                  num_threads=4):
+                  num_threads=4,
+                  legacy_norm_dedup=True):
     """ Preprocess a VCF + create index
 
     :param input_filename: the input VCF / BCF / ...
@@ -195,7 +214,7 @@ def preprocessVCF(input_filename, output_filename, location="",
     vargs += ["bcftools", "view", "-O", "v"]
 
     if filter_nonref:     
-        vargs += ["|", "python", "{}/remove_nonref_gt_variants.py".format(scriptDir), "|", "bcftools", "view",  "-O", "v"]
+        vargs += ["|", sys.executable, "{}/remove_nonref_gt_variants.py".format(scriptDir), "|", "bcftools", "view",  "-O", "v"]
 
 
     if type(location) is list:
@@ -222,6 +241,7 @@ def preprocessVCF(input_filename, output_filename, location="",
         int_suffix = ".bcf"
 
     tff = tempfile.NamedTemporaryFile(delete=False, suffix=int_suffix)
+    tff.close()
 
     try:
         # anything needs tabix? if so do an intermediate stage where we
@@ -244,7 +264,9 @@ def preprocessVCF(input_filename, output_filename, location="",
                       "|", "bcftools", "view"]
 
         if norm:
-            vargs += ["|", "bcftools", "norm", "-f", reference, "-c", "x", "-D"]
+            vargs += ["|", "bcftools", "norm", "-f", reference, "-c", "x"]
+            if legacy_norm_dedup:
+                vargs += ["-d", "exact"]
 
         vargs += ["-o", output_filename]
         if int_suffix == "vcf.gz":
@@ -283,22 +305,22 @@ def preprocessVCF(input_filename, output_filename, location="",
 def bedOverlapCheck(filename):
     """ Check for overlaps / out of order in a bed file """
     if filename.endswith(".gz"):
-        f = gzip.open(filename, "r")
+        f = gzip.open(filename, "rt", encoding="utf-8")
     else:
         f = open(filename, "r")
-    last = -1
-    lines = 1
-    thischr = None
-    for line in f:
-        l = line.split("\t")
-        if len(l) < 3:
-            continue
-        if thischr is not None and thischr != l[0]:
-            last = -1
-        thischr = l[0]
-        if (last-1) > int(l[1]):
-            logging.warn("%s has overlapping regions at %s:%i (line %i)" % (filename, l[0], int(l[1]), lines))
-            return 1
-        last = int(l[2])
-        lines += 1
+    with f:
+        last = -1
+        chromosome = None
+        for number, line in enumerate(f, 1):
+            if not line.strip() or line.startswith(('#', 'track', 'browser')):
+                continue
+            fields = line.split('\t')
+            if len(fields) < 3:
+                raise ValueError(f'Invalid BED line {number} in {filename}')
+            if fields[0] != chromosome:
+                last, chromosome = -1, fields[0]
+            if last > int(fields[1]):
+                logging.warning('%s overlaps at %s:%s (line %s)', filename, chromosome, fields[1], number)
+                return 1
+            last = int(fields[2])
     return 0

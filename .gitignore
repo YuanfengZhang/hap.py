@@ -31,3 +31,26 @@ Thumbs.db
 /cmake-build-debug
 /build
 /.vscode
+/.work/
+/.pixi/
+/resources/
+__pycache__/
+*.sif
+*.sif.sha256
+
+# Local assistant configuration, reports, and development artifacts
+/issues/
+.claude/
+CLAUDE.md
+AGENTS.md
+.env
+.env.*
+!.env.example
+/.tmp/
+/.cache/
+.pytest_cache/
+*.log
+*.sha256
+*.sha256.*
+*.sif
+/hap.py-py3*.tar*

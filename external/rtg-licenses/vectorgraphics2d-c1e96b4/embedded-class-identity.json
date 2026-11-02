@@ -1,0 +1,10 @@
+{
+  "candidate_source_commit": "67c13667d2b1bcb8d8dda8a9c1de9ae323102b3b",
+  "candidate_filename": "VectorGraphics2D-0.13-42-gc1e96b4.jar",
+  "candidate_sha256": "49b3a74af1ddaad73611567747cbadd8af675ac1da397eae91e00ffa4af6d4cb",
+  "rplot_sha256": "b276ee72f56b7ecfef032d03997cf63bd6f43125440c9c7b055ae335149aee88",
+  "classes_checked": 71,
+  "different_or_missing_classes": [],
+  "embedded_notices": {},
+  "limitation": "Matching candidate class bytes does not establish the provenance of other RPlot classes or complete binary correspondence."
+}

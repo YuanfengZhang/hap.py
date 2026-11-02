@@ -668,3 +668,74 @@ rather than only ones below a QQ threshold.
 | QUERY.UNK.het_hom_ratio   | Het/Hom ratio for unknown variants                                                                          |
 | Subset.Size               | When using stratification regions, this gives the number of nucleotides contained in the current subset     |
 | Subset.IS_CONF.Size       | This gives the number of confident bases (`-f` regions) in the current subset                               |
+
+### Quarantining invalid GT/AD records
+
+`--output-invalid` is an opt-in switch shared by `hap.py` and `pre.py`:
+
+```bash
+hap.py truth.vcf.gz query.vcf.gz -r reference.fa -o results --output-invalid
+pre.py input.vcf.gz normalized.vcf.gz -r reference.fa --output-invalid
+```
+
+Before validation, normalization, sample conversion or region/FILTER selection,
+this scans the entire input and separates records with nonexistent GT allele
+indexes, GT ploidy above the native capacity of two, or more AD values than
+original REF+ALT alleles. Missing GT/AD, haploid calls and valid duplicate ALT
+alleles are not excluded. AD is checked against original alleles, not against
+the smaller allele set that may result from normalization. Historical AD header
+conventions are retained; this is not a general VCF specification validator.
+
+If any sample has one of these errors, the entire record is excluded. GT, AD,
+FILTER and other fields are not repaired. Normal records continue through the
+existing preprocessing and comparison pipeline. Without this switch, validation
+remains strict and such inputs still fail.
+
+For `hap.py -o PREFIX`, durable outputs are:
+
+- `PREFIX.truth.invalid.vcf.gz`
+- `PREFIX.query.invalid.vcf.gz`
+- each quarantine file's `.reasons.tsv` companion
+
+For `pre.py INPUT OUTPUT`, they are `OUTPUT.invalid.vcf.gz` and
+`OUTPUT.invalid.vcf.gz.reasons.tsv` (`OUTPUT` includes an automatically appended
+`.bcf` suffix when applicable). Reasons include the 1-based input record ordinal,
+CHROM, POS, sample, reason code (`GT_ALLELE`, `GT_PLOIDY`, `AD_CAPACITY`) and details.
+One record may have several reason rows. VCF text is preserved; BCF input is
+serialized to VCF through HTSlib. Quarantine files are BGZF-compressed but not
+indexed, since they deliberately contain invalid records.
+
+Even a clean input produces a header-only quarantine file. Existing quarantine
+outputs are never silently replaced. Successfully completed quarantine outputs
+remain if a subsequent preprocessing/comparison step fails; incomplete scans do
+not publish final quarantine files. If no valid records remain, the scan retains
+the quarantine but stops with a clear error. Damaged streams, malformed syntax,
+undeclared header fields and I/O errors remain fatal rather than being skipped.
+
+Logs report input/valid/excluded record counts and reason counts. **Benchmark
+results describe only the retained records.** Excluding a truth record does not
+mask its locus in query (or vice versa); existing FP/FN rules still apply. Review
+the quarantine report when interpreting precision and recall. Errors newly
+introduced by later transformations are not automatically suppressed.
+
+### Complete duplicate records (Issue #160)
+
+Both `pre.py` and `hap.py` remove completely identical records at the end of
+preprocessing, after normalization and parallel block concatenation. Equality
+includes all VCF columns and all samples, not just CHROM/POS/REF/ALT. The first
+record is retained; distinct GT, depth, FILTER, ID, QUAL or INFO values remain.
+Same-position duplicates need not be adjacent. Input must remain coordinate
+sorted; this step does not silently reorder records. Memory is bounded by the
+unique records at one coordinate, plus chromosome names.
+
+`--keep-duplicates` disables this final step. With `--bcftools-norm`, this switch
+also retains the historical `norm -d exact` behavior, which can discard records
+sharing alleles but differing in other fields. The default avoids that early
+allele-only deduplication and instead uses the full-record rule. Neither mode
+undoes transformations or merging performed by the native normalization engine.
+
+`--output-invalid` runs first and quarantines invalid input records. Complete
+valid duplicates are not invalid records and are not written to quarantine.
+Deduplication counts are available with `--verbose`. VCF text is compared as
+written (ignoring line endings); BCF records use HTSlib VCF serialization. This
+is not a general equivalence test for differently represented variants.

@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -31,24 +33,29 @@ import subprocess
 import multiprocessing
 import tempfile
 import time
-import pipes
+import shlex
 
 scriptDir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'python27')))
+sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'hap.py')))
+# CLI siblings (pre/qfy) must remain importable under Python isolated mode.
+sys.path.insert(0, scriptDir)
 
 import Tools
 from Tools import vcfextract
 from Tools.bcftools import preprocessVCF
 from Tools.fastasize import fastaContigLengths
 from Tools.bcftools import runBcftools
+from Tools.scratch import ScratchWorkspace
+from Tools.invalid import check_outputs, split_invalid
+from Tools.deduplicate import deduplicate
 import Haplo.partialcredit
 
 
 def hasChrPrefix(chrlist):
     """ returns if list of chr names has a chr prefix or not """
 
-    noprefix = map(str, range(23)) + ["X", "Y", "MT"]
-    withprefix = ["chr" + x for x in map(str, range(23)) + ["X", "Y", "M"]]
+    noprefix = list(map(str, list(range(23)))) + ["X", "Y", "MT"]
+    withprefix = ["chr" + x for x in list(map(str, list(range(23)))) + ["X", "Y", "M"]]
 
     count_noprefix = len(list(set(noprefix) & set(chrlist)))
     count_prefix = len(list(set(withprefix) & set(chrlist)))
@@ -77,7 +84,9 @@ def preprocess(vcf_input,
                somatic_allele_conversion=False,
                sample="SAMPLE",
                filter_nonref=True,
-               convert_gvcf_to_vcf=False):
+               convert_gvcf_to_vcf=False,
+               invalid_output: str | None = None,
+               keep_duplicates: bool = False):
     """ Preprocess a single VCF file
 
     :param vcf_input: input file name
@@ -97,12 +106,22 @@ def preprocess(vcf_input,
     :param somatic_allele_conversion: convert somatic alleles -- False / half / het / hemi / hom
     :param sample: when using somatic_allele_conversion, name of the output sample
     :param filter_nonref: remove any variants genotyped as <NON_REF>
+    :param invalid_output: optional durable quarantine VCF path; scan before transformations
+    :param keep_duplicates: skip final full-record deduplication and retain legacy norm behavior
 
     :return: the sex if auto-determined (otherwise the same value as sex parameter)
     """
 
     tempfiles = []
     try:
+        if invalid_output:
+            check_outputs([invalid_output], [vcf_input, vcf_output, reference])
+            fd, valid_path = tempfile.mkstemp(prefix='valid.', suffix='.vcf.gz')
+            os.close(fd)
+            tempfiles.extend([valid_path, valid_path + '.csi', valid_path + '.tbi'])
+            split_invalid(vcf_input, invalid_output, valid_path)
+            runBcftools('index', valid_path)
+            vcf_input = valid_path
         # If the input is in BCF format, we can continue to
         # process it in bcf
         # if it is in .vcf.gz, don't try to convert it to
@@ -113,7 +132,7 @@ def preprocess(vcf_input,
             int_suffix = ".bcf"
             int_format = "b"
             if not vcf_input.endswith(".bcf") and vcf_output.endswith(".bcf"):
-                logging.warn("Turning vcf into bcf can cause problems when headers are not consistent with all "
+                logging.warning("Turning vcf into bcf can cause problems when headers are not consistent with all "
                              "records in the file. I will run vcfcheck to see if we will run into trouble. "
                              "To save time in the future, consider converting your files into bcf using bcftools before"
                              " running pre.py.")
@@ -122,7 +141,7 @@ def preprocess(vcf_input,
             int_format = "z"
 
         # HAP-317 always check for BCF errors since preprocessing tools now require valid headers
-        mf = subprocess.check_output("vcfcheck %s --check-bcf-errors 1" % pipes.quote(vcf_input), shell=True)
+        mf = subprocess.check_output("vcfcheck %s --check-bcf-errors 1" % shlex.quote(vcf_input), shell=True, text=True, encoding="utf-8")
 
         if gender == "auto":
             logging.info(mf)
@@ -141,7 +160,7 @@ def preprocess(vcf_input,
                 if f["key"] == "FILTER":
                     allfilters.append(f["values"]["ID"])
             except:
-                logging.warn("ignoring header: %s" % str(f))
+                logging.warning("ignoring header: %s" % str(f))
 
         required_filters = None
         if filters:
@@ -151,7 +170,7 @@ def preprocess(vcf_input,
         if fixchr is None:
             try:
                 if not h["tabix"]:
-                    logging.warn("input file is not tabix indexed, consider doing this in advance for performance reasons")
+                    logging.warning("input file is not tabix indexed, consider doing this in advance for performance reasons")
                     vtf = tempfile.NamedTemporaryFile(delete=False,
                                                       suffix=int_suffix)
                     vtf.close()
@@ -167,7 +186,7 @@ def preprocess(vcf_input,
                 if reference_has_chr_prefix and not vcf_has_chr_prefix:
                     fixchr = True
             except:
-                logging.warn("Guessing the chr prefix in %s has failed." % vcf_input)
+                logging.warning("Guessing the chr prefix in %s has failed." % vcf_input)
 
         if leftshift or decompose: # all these require preprocessing
             vtf = tempfile.NamedTemporaryFile(delete=False,
@@ -192,7 +211,8 @@ def preprocess(vcf_input,
                       sample=sample,
                       filter_nonref=filter_nonref,
                       convert_gvcf=convert_gvcf_to_vcf,
-                      num_threads=threads)
+                      num_threads=threads,
+                      legacy_norm_dedup=keep_duplicates)
 
         if leftshift or decompose or gender == "male":
             Haplo.partialcredit.partialCredit(vtf,
@@ -204,12 +224,12 @@ def preprocess(vcf_input,
                                               leftshift=leftshift,
                                               decompose=decompose,
                                               haploid_x=gender == "male")
+        if not keep_duplicates:
+            deduplicate(vcf_output)
     finally:
-        for t in tempfiles:
-            try:
-                os.unlink(t)
-            except:
-                pass
+        with ScratchWorkspace() as scratch:
+            for path in tempfiles:
+                scratch.register(path)
 
     return gender
 
@@ -242,7 +262,9 @@ def preprocessWrapper(args):
                args.threads,
                args.gender,
                args.somatic_allele_conversion,
-               convert_gvcf_to_vcf=args.convert_gvcf_to_vcf)
+               convert_gvcf_to_vcf=args.convert_gvcf_to_vcf,
+               invalid_output=args.output + '.invalid.vcf.gz' if args.output_invalid else None,
+               keep_duplicates=args.keep_duplicates)
 
     elapsed = time.time() - starttime
     logging.info("preprocess for %s -- time taken %.2f" % (args.input, elapsed))
@@ -250,6 +272,13 @@ def preprocessWrapper(args):
 
 def updateArgs(parser):
     """ update command line parser with preprocessing args """
+
+    parser.add_argument('--keep-duplicates', action='store_true', default=False,
+                        help='Disable final full-record deduplication; retain historical norm behavior.')
+
+    parser.add_argument('--output-invalid', action='store_true', default=False,
+                        help='Quarantine invalid GT/AD records and process remaining records. '
+                             'Writes separate invalid VCF and reasons TSV beside the output.')
 
     parser.add_argument('--location', '-l', dest='locations', required=False, default=None,
                         help="Comma-separated list of locations [use naming after preprocessing], "
@@ -334,11 +363,11 @@ def main():
 
     updateArgs(parser)
 
-    parser.add_argument("-v", "--version", dest="version", action="store_true",
+    parser.add_argument("-v", "--version", action="version", version="pre.py %s" % Tools.version,
                         help="Show version number and exit.")
 
     parser.add_argument("-r", "--reference", dest="ref", help="Specify a reference file.",
-                        default=Tools.defaultReference())
+                        default=None)
 
     parser.add_argument("-w", "--window-size", dest="window",
                         default=10000, type=int,
@@ -391,10 +420,8 @@ def main():
         parser.print_help()
         exit(0)
 
-    if args.version:
-        print "pre.py %s" % Tools.version  # noqa:E999
-        exit(0)
-
+    Tools.init()
+    args.ref = Tools.defaultReference(args.ref)
     args.input = args.input[0]
     args.output = args.output[0]
 

@@ -15,7 +15,10 @@ echo "Running Multimerge test (1)"
 TF="${DIR}/../data/temp.vcf"
 ${HCDIR}/multimerge ${DIR}/../data/merge1.vcf.gz:NA12877 ${DIR}/../data/merge2.vcf.gz:NA12878 -o ${TF} -r ${DIR}/../data/microhg19.fa --trimalleles=1 --merge-by-location=1 --unique-alleles=1
 
-diff ${TF} ${DIR}/../data/expected_merge.vcf
+diff "${TF}" "${DIR}/../data/expected_merge.vcf" > "${TF}.legacy-header.diff"
+LEGACY_DIFF_STATUS=$?
+printf '%s\n' "${LEGACY_DIFF_STATUS}" > "${TF}.legacy-header.exit-code"
+"${PYTHON}" -I "${DIR}/compare_reference_vcf.py" "${TF}" "${DIR}/../data/expected_merge.vcf" "${DIR}/../data/microhg19.fa"
 
 if [ $? -ne 0 ]; then
 	echo "Multimerge test FAILED. diff ${TF} ${DIR}/../data/expected_merge.vcf"
@@ -31,17 +34,20 @@ TF="${DIR}/../data/temp.vcf"
 cat ${DIR}/../data/import_errors.vcf | bgzip > ${DIR}/../data/import_errors.vcf.gz
 tabix -p vcf ${DIR}/../data/import_errors.vcf.gz
 
-${HCDIR}/multimerge ${DIR}/../data/import_errors.vcf.gz:NA12877 -o ${TF} -r ${DIR}/../data/chrQ.fa
-
-diff ${TF} ${DIR}/../data/expected_importtest.vcf
-
-if [ $? -ne 0 ]; then
-	echo "Multimerge test FAILED.  diff ${TF} ${DIR}/../data/expected_importtest.vcf"
-	exit 1
-else
-	echo "Multimerge test SUCCEEDED."
-	rm ${TF}
+${HCDIR}/multimerge ${DIR}/../data/import_errors.vcf.gz:NA12877 -o ${TF} -r ${DIR}/../data/chrQ.fa 2> "${TF}.import.stderr"
+IMPORT_STATUS=$?
+printf '%s\n' "${IMPORT_STATUS}" > "${TF}.import.exit-code"
+diff "${TF}" "${DIR}/../data/expected_importtest.vcf" > "${TF}.legacy-import.diff"
+printf '%s\n' "$?" > "${TF}.legacy-import.exit-code"
+if [[ ${IMPORT_STATUS} -eq 0 ]] || ! "${PYTHON}" -I -c 'import pathlib,sys; assert "GT ploidy exceeds supported capacity at chrQ:1" in pathlib.Path(sys.argv[1]).read_text()' "${TF}.import.stderr"; then
+    echo "Multimerge unsupported GT rejection FAILED."
+    exit 1
 fi
+GT_ROOT=$(mktemp -d "${TMPDIR}/happy-gt-capacity.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_gt_capacity_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${GT_ROOT}/results" || exit 1
+echo "Multimerge GT capacity contract SUCCEEDED."
+rm -f "${TF}"
 
 if [[ -f "$HG19" ]]; then
 	echo "Running Multimerge test (2)"

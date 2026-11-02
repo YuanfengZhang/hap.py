@@ -1,0 +1,815 @@
+--- a/htsjdk/samtools/SAMFileWriterFactory.java
++++ b/htsjdk/samtools/SAMFileWriterFactory.java
+@@ -36,6 +36,7 @@
+ import htsjdk.samtools.util.RuntimeIOException;
+ import htsjdk.samtools.util.zip.DeflaterFactory;
+ import java.io.IOException;
++import java.io.File;
+ import java.io.OutputStream;
+ import java.net.URI;
+ import java.nio.file.Files;
+@@ -47,6 +48,8 @@
+  * Create a writer for writing SAM, BAM, or CRAM files.
+  */
+ public class SAMFileWriterFactory implements Cloneable {
++public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream, boolean preBlockCompressed) { return initWriter(header, presorted, new BAMFileWriter(stream, (Path) null, preBlockCompressed)); }
++
+     private static final Log log = Log.getInstance(SAMFileWriterFactory.class);
+     private static boolean defaultCreateIndexWhileWriting = Defaults.CREATE_INDEX;
+     private boolean createIndex = defaultCreateIndexWhileWriting;
+@@ -576,6 +579,58 @@
+ 
+         if (this.useAsyncIo) return new AsyncSAMFileWriter(writer, this.asyncOutputBufferSize);
+         else return writer;
++        }
++
++    /**
++     * RTG Added.
++     * Create a SAMTextWriter for writing to a stream that is ready to receive SAMRecords.
++     * This method does not support the creation of an MD5 file
++     * 
++     * @param header entire header. Sort order is determined by the sortOrder property of this arg.
++     * @param presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
++     * @param stream the stream to write records to.
++     */
++    public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream, final boolean writeHeader) {
++      final SAMTextWriter ret = new SAMTextWriter(stream) {
++        {
++          mWriteHeader = writeHeader;
++        }
++      };
++      return initWriter(header, presorted, ret);
++    }
++
++    /**
++     * RTG Added.
++     * Create a SAMTextWriter for writing to a stream that is ready to receive SAMRecords.
++     * This method does not support the creation of an MD5 file
++     *
++     * @param header entire header. Sort order is determined by the sortOrder property of this arg.
++     * @param presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
++     * @param stream the stream to write records to.
++     * @param writeHeader true to write out BAM header
++     * @param terminate true to add an empty gzip block terminator, only applies if <code>preBlockCompressed</code> is false
++     * @param preBlockCompressed set this to true if stream is already block compressed
++     */
++    public SAMFileWriter makeBAMWriter(SAMFileHeader header, boolean presorted, OutputStream stream, final boolean writeHeader, boolean terminate, boolean preBlockCompressed) {
++      final BAMFileWriter ret = new BAMFileWriter(stream, null, BlockCompressedOutputStream.getDefaultCompressionLevel(), terminate, preBlockCompressed) {
++        {
++          mWriteHeader = writeHeader;
++        }
++      };
++      return initWriter(header, presorted, ret);
++}
++
++    /**
++     * Create either a SAM or a BAM writer based on examination of the outputFile extension, defaults to BAM writer.
++     *
++     * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
++     * @param presorted  presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
++     * @param outputFile where to write the output.  Must end with .sam or .bam.
++     * @return SAM or BAM writer based on file extension of outputFile.
++     */
++    public SAMFileWriter makeSAMOrBAMWriter(
++            final SAMFileHeader header, final boolean presorted, final File outputFile) {
++        return makeSAMOrBAMWriter(header, presorted, outputFile.toPath());
+     }
+ 
+     /**
+--- a/htsjdk/samtools/SAMTextReader.java
++++ b/htsjdk/samtools/SAMTextReader.java
+@@ -173,6 +173,25 @@
+     }
+ 
+     /** Reads the header, closing what this reader was given if that fails, as there is then no reader to close. */
++    public SAMTextReader(final InputStream stream, final ValidationStringency validationStringency,
++                         final SAMRecordFactory factory, final SAMFileHeader headerOverride) {
++        this(stream, validationStringency, factory);
++        overrideHeader(headerOverride);
++    }
++
++    public SAMTextReader(final InputStream stream, final Path path,
++                         final ValidationStringency validationStringency,
++                         final SAMRecordFactory factory, final SAMFileHeader headerOverride) {
++        this(stream, path, validationStringency, factory);
++        overrideHeader(headerOverride);
++    }
++
++    void overrideHeader(final SAMFileHeader headerOverride) {
++        if (headerOverride != null) {
++            mFileHeader = headerOverride;
++        }
++    }
++
+     private void readHeaderOrClose() {
+         try {
+             readHeader();
+--- a/htsjdk/samtools/SamFileValidator.java
++++ b/htsjdk/samtools/SamFileValidator.java
+@@ -830,7 +830,8 @@
+                 final PairEndInfo end2,
+                 final String readName,
+                 final List<SAMValidationError> errors) {
+-            if (end1.mateAlignmentStart != end2.readAlignmentStart) {
++                        if (end1.mateAlignmentStart != 0) { // RTG: PNEXT/RNEXT do not need to be set. Only do these checks when PNEXT/RNEXT have actually been provided, so we can see see when actual problems occur. Should add a separate warning though when they haven't been provided
++if (end1.mateAlignmentStart != end2.readAlignmentStart) {
+                 errors.add(new SAMValidationError(
+                         Type.MISMATCH_MATE_ALIGNMENT_START,
+                         "Mate alignment does not match alignment start of mate",
+@@ -850,7 +851,8 @@
+                         "Mate reference index (MRNM) does not match reference index of mate",
+                         readName,
+                         end1.recordNumber));
+-            }
++                        }
++}
+             if (end1.mateUnmappedFlag != end2.readUnmappedFlag) {
+                 errors.add(new SAMValidationError(
+                         Type.MISMATCH_FLAG_MATE_UNMAPPED,
+--- a/htsjdk/samtools/BAMFileWriter.java
++++ b/htsjdk/samtools/BAMFileWriter.java
+@@ -44,7 +44,8 @@
+ 
+     private final BinaryCodec outputBinaryCodec;
+     private BAMRecordCodec bamRecordCodec = null;
+-    private final BlockCompressedOutputStream blockCompressedOutputStream;
++        private final OutputStream blockCompressedOutputStream;
++
+     private BAMIndexer bamIndexer = null;
+     private Path bamIndexPath;
+     private SAMException indexingFailure;
+@@ -85,10 +86,30 @@
+             final String absoluteFilename,
+             final int compressionLevel,
+             final DeflaterFactory deflaterFactory) {
+-        blockCompressedOutputStream =
+-                new BlockCompressedOutputStream(os, (Path) null, compressionLevel, deflaterFactory);
++              blockCompressedOutputStream = new BlockCompressedOutputStream(os, (Path)null, compressionLevel, deflaterFactory, true);
++
+         outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+         outputBinaryCodec.setOutputFileName(absoluteFilename);
++    }
++
++    protected BAMFileWriter(final OutputStream os, final Path path, final boolean preBlockCompressed) {
++        this(os, path, BlockCompressedOutputStream.getDefaultCompressionLevel(),
++             BlockCompressedOutputStream.getDefaultDeflaterFactory(), true, preBlockCompressed);
++    }
++
++    public BAMFileWriter(final OutputStream os, final Path path, final int compressionLevel,
++                         final boolean terminate, final boolean preBlockCompressed) {
++        this(os, path, compressionLevel, BlockCompressedOutputStream.getDefaultDeflaterFactory(),
++             terminate, preBlockCompressed);
++    }
++
++    protected BAMFileWriter(final OutputStream os, final Path path, final int compressionLevel,
++                            final DeflaterFactory deflaterFactory, final boolean terminate,
++                            final boolean preBlockCompressed) {
++        blockCompressedOutputStream = preBlockCompressed ? os
++            : new BlockCompressedOutputStream(os, path, compressionLevel, deflaterFactory, terminate);
++        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
++        outputBinaryCodec.setOutputFileName(getPathString(path));
+     }
+ 
+     private void prepareToWriteAlignments() {
+@@ -120,6 +141,9 @@
+         }
+         if (getFilename() == null) {
+             throw new SAMException("Not creating BAM index since we don't have an output file name");
++        }
++        if (!(blockCompressedOutputStream instanceof BlockCompressedOutputStream)) {
++            throw new UnsupportedOperationException("Cannot index on self supplied block compression");
+         }
+         bamIndexer =
+                 createBamIndex(getFilename(), indexType.resolve(getFileHeader().getSequenceDictionary()), csiMinShift);
+@@ -159,9 +183,11 @@
+ 
+         if (bamIndexer != null) {
+             try {
+-                final long startOffset = blockCompressedOutputStream.getFilePointer();
++                                final long startOffset = ((BlockCompressedOutputStream) blockCompressedOutputStream).getFilePointer();
++
+                 bamRecordCodec.encode(alignment);
+-                final long stopOffset = blockCompressedOutputStream.getFilePointer();
++                                final long stopOffset = ((BlockCompressedOutputStream) blockCompressedOutputStream).getFilePointer();
++
+                 // set the alignment's SourceInfo and then prepare its index information
+                 alignment.setFileSource(new SAMFileSource(null, new BAMFileSpan(new Chunk(startOffset, stopOffset))));
+                 bamIndexer.processAlignment(alignment);
+@@ -222,7 +248,7 @@
+         } catch (final IOException e) {
+             throw new RuntimeIOException(e);
+         }
+-        return blockCompressedOutputStream.getFilePointer();
++        return ((BlockCompressedOutputStream) blockCompressedOutputStream).getFilePointer();
+     }
+ 
+     /** @return absolute path in URI format, or null if this writer does not correspond to a file.
+--- a/htsjdk/samtools/SamInputResource.java
++++ b/htsjdk/samtools/SamInputResource.java
+@@ -57,7 +57,9 @@
+     private final InputResource source;
+     private InputResource index;
+ 
+-    SamInputResource(final InputResource data) {
++        private SAMFileHeader header = null;
++    private SamReader.Type assumeType = null;
++SamInputResource(final InputResource data) {
+         this(data, null);
+     }
+ 
+@@ -79,7 +81,25 @@
+      */
+     InputResource indexMaybe() {
+         return index;
+-    }
++        }
++
++    /**
++     * Optional pre-determined SAM header structure
++     *
++     * @return null if no header is pre-determined defined for this resource and so must be read from the source
++     */
++    SAMFileHeader headerMaybe() {
++        return header;
++    }
++
++    /**
++     * Assume interpretation of this pre-positioned input stream as the designated type
++     *
++     * @return null if no default type is defined, otherwise, the type that the stream should be interpreted as.
++     */
++    SamReader.Type assumeType() {
++        return assumeType;
++}
+ 
+     @Override
+     public String toString() {
+@@ -215,6 +235,17 @@
+     /** Updates the index to point at the provided resource, then returns itself. */
+     public SamInputResource index(final SeekableStream seekableStream) {
+         this.index = new SeekableStreamInputResource(seekableStream);
++        return this;
++    }
++    /** Updates the header to point at the provided resource, then returns itself. */
++    public SamInputResource header(final SAMFileHeader header) {
++        this.header = header;
++        return this;
++    }
++
++    /** Sets the assumed format type. */
++    public SamInputResource assumeType(final SamReader.Type type) {
++        this.assumeType = type;
+         return this;
+     }
+ }
+--- a/htsjdk/samtools/SAMLineParser.java
++++ b/htsjdk/samtools/SAMLineParser.java
+@@ -31,6 +31,8 @@
+ import java.nio.file.Path;
+ import java.util.List;
+ 
++
++import htsjdk.samtools.util.StringUtil;
+ /**
+  * This class enables creation of a SAMRecord object from a String in SAM text format.  The SAM flag field will be inferred
+  * for each record separately, unless the expected format is set using `withSamFlagField`.
+@@ -98,7 +100,9 @@
+     private int currentLineOff;
+     private int currentLineLen;
+ 
+-    //
++        private boolean mCurrentRecordIsValid = true;
++  
++//
+     // Constructors
+     //
+ 
+@@ -261,6 +265,7 @@
+         this.currentLineOff = off;
+         this.currentLineLen = len;
+ 
++        mCurrentRecordIsValid = true;
+         final int numFields = splitFieldsByTab(buf, off, len, mFieldOffsets, mFieldLengths);
+         if (numFields < NUM_REQUIRED_FIELDS) {
+             throw reportFatalErrorParsingLine("Not enough fields");
+@@ -341,9 +346,7 @@
+         if (isAsterisk(buf, mrnmOff, mrnmLen)) {
+             samRecord.setMateReferenceNameAndIndex(
+                     SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+-            if (samRecord.getReadPairedFlag() && !samRecord.getMateUnmappedFlag()) {
+-                reportErrorParsingLine("MRNM not specified but flags indicate mate mapped");
+-            }
++            // RTG allows paired records without mate coordinates.
+         } else {
+             if (!samRecord.getReadPairedFlag()) {
+                 reportErrorParsingLine("MRNM specified but flags indicate unpaired");
+@@ -425,14 +428,19 @@
+ 
+         // Only call samRecord.isValid() if errors would be reported since the validation
+         // is quite expensive in and of itself.
+-        if (this.validationStringency != ValidationStringency.SILENT) {
++        //        if (this.validationStringency != ValidationStringency.SILENT) {
++
+             final List<SAMValidationError> validationErrors = samRecord.isValid();
+             if (validationErrors != null) {
+-                for (final SAMValidationError errorMessage : validationErrors) {
++                                mCurrentRecordIsValid = false;
++for (final SAMValidationError errorMessage : validationErrors) {
+                     reportErrorParsingLine(errorMessage.getMessage());
+                 }
+             }
+-        }
++        //        }
++
++        samRecord.setIsValid(mCurrentRecordIsValid);
++
+ 
+         return samRecord;
+     }
+@@ -696,7 +704,8 @@
+     }
+ 
+     private void reportErrorParsingLine(final String reason) {
+-        final String errorMessage = makeErrorString(reason);
++                mCurrentRecordIsValid = false;
++final String errorMessage = makeErrorString(reason);
+ 
+         if (validationStringency == ValidationStringency.STRICT) {
+             throw new SAMFormatException(errorMessage);
+@@ -706,7 +715,8 @@
+     }
+ 
+     private void reportErrorParsingLine(final Exception e) {
+-        final String errorMessage = makeErrorString(e.getMessage());
++                mCurrentRecordIsValid = false;
++final String errorMessage = makeErrorString(e.getMessage());
+         if (validationStringency == ValidationStringency.STRICT) {
+             throw new SAMFormatException(errorMessage, e);
+         } else if (validationStringency == ValidationStringency.LENIENT) {
+--- a/htsjdk/samtools/SamReaderFactory.java
++++ b/htsjdk/samtools/SamReaderFactory.java
+@@ -388,7 +388,22 @@
+                             this.samRecordFactory,
+                             this.asynchronousIO,
+                             this.inflaterFactory);
++                } else                 if (type == InputResource.Type.INPUT_STREAM && resource.assumeType() != null) {
++                    if (indexDefined) {
++                        throw new RuntimeException("Cannot use index file with pre-positioned stream");
++                    }
++                    if (resource.headerMaybe() == null) {
++                        throw new RuntimeException("Cannot use pre-positioned stream without supplying a header");
++                    }
++                    if (resource.assumeType() == SamReader.Type.BAM_TYPE) {
++                        primitiveSamReader = BAMFileReader.createFromUnsupportedConstructor((BlockCompressedInputStream) data.asUnbufferedInputStream(), validationStringency, this.samRecordFactory, resource.headerMaybe());
++                    } else if (resource.assumeType() == SamReader.Type.SAM_TYPE) {
++                        primitiveSamReader = new SAMTextReader(data.asUnbufferedInputStream(), data.asPath(), validationStringency, this.samRecordFactory, resource.headerMaybe());
++                    } else {
++                        throw new RuntimeEOFException("Do not know how to use pre-positioned stream with type: " + resource.assumeType().name());
++                    }
+                 } else if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.URL) {
++
+                     if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
+                         final SeekableStream bufferedIndexStream;
+                         if (indexDefined && indexMaybe.asUnbufferedSeekableStream() != null) {
+@@ -424,8 +439,8 @@
+                         LOG.warn("Unable to detect file format from input URL or stream, assuming SAM format.");
+                         primitiveSamReader = new SAMTextReader(
+                                 IOUtil.toBufferedStream(data.asUnbufferedInputStream()),
+-                                validationStringency,
+-                                this.samRecordFactory);
++                                                                validationStringency, this.samRecordFactory, null);
++
+                     }
+                 } else {
+                     InputStream bufferedStream = IOUtil.maybeBufferInputStream(
+@@ -555,6 +570,10 @@
+                     }
+                 }
+ 
++                if (primitiveSamReader instanceof SAMTextReader) {
++                    ((SAMTextReader) primitiveSamReader).overrideHeader(resource.headerMaybe());
++                }
++
+                 // Apply the options defined by this factory to this reader
+                 final SamReader.PrimitiveSamReaderToSamReaderAdapter reader =
+                         new SamReader.PrimitiveSamReaderToSamReaderAdapter(primitiveSamReader, resource);
+--- a/htsjdk/samtools/BAMIndexer.java
++++ b/htsjdk/samtools/BAMIndexer.java
+@@ -216,11 +216,12 @@
+                 throw new SAMException("No source (virtual file offsets); needed for indexing on BAM Record " + rec);
+             }
+             final Chunk chunk = ((BAMFileSpan) source.getFilePointer()).getSingleChunk();
+-            // An unmapped read has no alignment end, which the builder takes as the single base at its start.
++            // Preserve the RTG convention of indexing records without alignment ends using read length.
+             indexBuilder.add(
+                     rec.getReferenceIndex(),
+                     alignmentStart,
+-                    rec.getAlignmentEnd(),
++                    rec.getAlignmentEnd() == SAMRecord.NO_ALIGNMENT_START
++                        ? rec.getAlignmentStart() + rec.getReadLength() : rec.getAlignmentEnd(),
+                     chunk.getChunkStart(),
+                     chunk.getChunkEnd());
+             if (rec.getReadUnmappedFlag()) {
+--- a/htsjdk/samtools/BAMFileReader.java
++++ b/htsjdk/samtools/BAMFileReader.java
+@@ -208,7 +208,7 @@
+                 useAsynchronousIO,
+                 path.toAbsolutePath().toString(),
+                 validationStringency,
+-                samRecordFactory);
++                samRecordFactory, null);
+ 
+         if (mIndexPath != null) {
+             try {
+@@ -302,7 +302,7 @@
+                 useAsynchronousIO,
+                 strm.getSource(),
+                 validationStringency,
+-                samRecordFactory);
++                samRecordFactory, null);
+     }
+ 
+     /**
+@@ -383,7 +383,9 @@
+             final boolean useAsynchronousIO,
+             final String source,
+             final ValidationStringency validationStringency,
+-            final SAMRecordFactory samRecordFactory)
++                                      final SAMRecordFactory samRecordFactory,
++                          final SAMFileHeader headerOverride)
++
+             throws IOException {
+         mIndexPath = indexPath;
+         mIsSeekable = true;
+@@ -392,9 +394,19 @@
+         this.eagerDecode = eagerDecode;
+         this.mValidationStringency = validationStringency;
+         this.samRecordFactory = samRecordFactory;
+-        this.mFileHeader = readHeaderOrClose(source);
++        if (headerOverride == null || mCompressedInputStream.getFilePointer() == 0) {
++            this.mFileHeader = readHeaderOrClose(source);
++        }
++        if (headerOverride != null) {
++            this.mFileHeader = headerOverride;
++        }
+         mFirstRecordPointer = mCompressedInputStream.getFilePointer();
+-    }
++        }
++
++    /** RTG Added. */
++    static BAMFileReader createFromUnsupportedConstructor(BlockCompressedInputStream bcis, ValidationStringency val, SAMRecordFactory factory, SAMFileHeader headerOverride) throws IOException {
++      return new BAMFileReader(bcis, (Path) null, false, Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS, null, val, factory, headerOverride);
++}
+ 
+     /**
+      * Prepare to read BAM from a compressed stream (seekable)
+--- a/htsjdk/samtools/SAMFileWriterImpl.java
++++ b/htsjdk/samtools/SAMFileWriterImpl.java
+@@ -52,7 +52,9 @@
+     // For validating presorted records.
+     private SAMSortOrderChecker sortOrderChecker;
+ 
+-    /**
++    
++    protected boolean mWriteHeader = true;
++/**
+      * When writing records that are not presorted, specify the number of records stored in RAM
+      * before spilling to disk.  This method sets the default value for all SamFileWriterImpl
+      * instances. Must be called before the constructor is called.
+@@ -159,7 +161,10 @@
+         }
+         header.setSortOrder(this.sortOrder);
+ 
+-        writeHeader(header);
++                if (mWriteHeader) {
++            writeHeader(header);
++        }
++
+ 
+         if (this.presorted) {
+             if (this.sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
+@@ -192,7 +197,8 @@
+      */
+     @Override
+     public void addAlignment(final SAMRecord alignment) {
+-        alignment.setHeaderStrict(header); // re-establish the record header and resolve reference indices
++        alignment.setHeaderStrict(header); // Resolve reference and mate indices against the output dictionary.
++
+         if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
+             writeAlignment(alignment);
+         } else if (presorted) {
+--- a/htsjdk/samtools/SAMTextHeaderCodec.java
++++ b/htsjdk/samtools/SAMTextHeaderCodec.java
+@@ -120,7 +120,12 @@
+                             "Unrecognized header record type: " + parsedHeaderLine.getHeaderRecordType());
+             }
+         }
+-        mFileHeader.setSequenceDictionary(new SAMSequenceDictionary(sequences));
++                try {
++          mFileHeader.setSequenceDictionary(new SAMSequenceDictionary(sequences));
++        } catch (IllegalArgumentException e) {
++          throw new SAMFormatException(e.getMessage(), e);
++        }
++
+         mFileHeader.setReadGroups(readGroups);
+ 
+         SAMUtils.processValidationErrors(mFileHeader.getValidationErrors(), -1, validationStringency);
+--- a/htsjdk/samtools/SAMRecord.java
++++ b/htsjdk/samtools/SAMRecord.java
+@@ -194,7 +194,9 @@
+     protected Integer mReferenceIndex = null;
+     protected Integer mMateReferenceIndex = null;
+ 
+-    /**
++        private boolean mIsValid = true;
++   
++/**
+      * Some attributes (e.g. CIGAR) are not decoded immediately.  Use this to decide how to validate when decoded.
+      */
+     private ValidationStringency mValidationStringency = ValidationStringency.SILENT;
+@@ -215,7 +217,15 @@
+         mHeader = header;
+     }
+ 
+-    public String getReadName() {
++        public void setIsValid(boolean isValid) {
++      mIsValid = isValid;
++    }
++    
++    public boolean getIsValid() {
++      return mIsValid;
++    }
++    
++public String getReadName() {
+         return mReadName;
+     }
+ 
+@@ -1182,9 +1192,20 @@
+      * @param tag Two-character tag name.
+      * @return Appropriately typed tag value, or null if the requested tag is not present.
+      */
+-    public Object getAttribute(final String tag) {
++        @Deprecated // use get typed attribute methods that better handle null
++public Object getAttribute(final String tag) {
+         return getAttribute(SAMTag.makeBinaryTag(tag));
+-    }
++        }
++
++    /**
++     * Report the presence of a SAM tag's value in a values of objects
++     * @param tag Two-character tag name.
++     * @param values object values containing values
++     * @return true if the tag's value is present in the values
++     */
++    public boolean hasAttributeInList(final String tag, final List<Object> values) {
++        return values.contains(getAttribute(tag));
++}
+ 
+     /**
+      * Get the value for a SAM tag.
+@@ -1972,7 +1993,9 @@
+     public List<SAMValidationError> isValid(final boolean firstOnly) {
+         // ret is only instantiate if there are errors to report, in order to reduce GC in the typical case
+         // in which everything is valid.  It's ugly, but more efficient.
+-        ArrayList<SAMValidationError> ret = null;
++                mIsValid = false; // set to true if ret stays empty
++      
++ArrayList<SAMValidationError> ret = null;
+         if (!getReadPairedFlag()) {
+             if (getProperPairFlagUnchecked()) {
+                 if (ret == null) ret = new ArrayList<>();
+@@ -2039,7 +2062,8 @@
+                 if (ret == null) ret = new ArrayList<SAMValidationError>();
+                 ret.addAll(errors);
+             }
+-            if (!hasMateReferenceName() && !getMateUnmappedFlag()) {
++            /* RTG: We do this sometimes, spec doesn't say it's required
++if (!hasMateReferenceName() && !getMateUnmappedFlag()) {
+                 if (ret == null) ret = new ArrayList<SAMValidationError>();
+                 ret.add(new SAMValidationError(
+                         SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED,
+@@ -2047,7 +2071,8 @@
+                         getReadName()));
+                 if (firstOnly) return ret;
+             }
+-            if (!getFirstOfPairFlagUnchecked() && !getSecondOfPairFlagUnchecked()) {
++            */
++if (!getFirstOfPairFlagUnchecked() && !getSecondOfPairFlagUnchecked()) {
+                 if (ret == null) ret = new ArrayList<SAMValidationError>();
+                 ret.add(new SAMValidationError(
+                         SAMValidationError.Type.PAIRED_READ_NOT_MARKED_AS_FIRST_OR_SECOND,
+@@ -2179,7 +2204,8 @@
+         information, see:
+           1. https://github.com/samtools/htsjdk/issues/1174
+           2. https://github.com/samtools/htsjdk/pull/1360
+-        if (this.getReadLength() == 0 && !this.isSecondaryAlignment()) {
++                if (this.getReadLength() == 0 && !this.isSecondaryAlignment() && !this.getReadUnmappedFlag()) {
++
+             final Object fz = getAttribute(SAMTag.FZ.getBinaryTag());
+             if (fz == null) {
+                 final String cq = (String)getAttribute(SAMTag.CQ.getBinaryTag());
+@@ -2251,7 +2277,8 @@
+         }
+ 
+         if (ret == null || ret.isEmpty()) {
+-            return null;
++                        mIsValid = true;
++return null;
+         }
+         return ret;
+     }
+--- a/htsjdk/samtools/SAMBinaryTagAndValue.java
++++ b/htsjdk/samtools/SAMBinaryTagAndValue.java
+@@ -202,11 +202,13 @@
+         if (attr == null) return this;
+         if (attr.next != null) throw new IllegalStateException("Can only insert single tag/value combinations.");
+ 
+-        if (attr.tag < this.tag) {
++                /*if (attr.tag < this.tag) {
++
+             // attr joins the list ahead of this element
+             attr.next = this;
+             return attr;
+-        } else if (this.tag == attr.tag) {
++        }         else*/ if (this.tag == attr.tag) {
++
+             // attr replaces this in the list
+             attr.next = this.next;
+             return attr;
+@@ -233,7 +235,8 @@
+     /** Returns the SAMBinaryTagAndValue that contains the required tag, or null if not contained. */
+     public SAMBinaryTagAndValue find(final short tag) {
+         if (this.tag == tag) return this;
+-        else if (this.tag > tag || this.next == null) return null;
++                else if (/*this.tag > tag ||*/ this.next == null) return null;
++
+         else return this.next.find(tag);
+     }
+ 
+--- a/htsjdk/variant/variantcontext/VariantJEXLContext.java
++++ b/htsjdk/variant/variantcontext/VariantJEXLContext.java
+@@ -27,7 +27,7 @@
+ 
+ import java.util.HashMap;
+ import java.util.Map;
+-import org.apache.commons.jexl2.JexlContext;
++import org.apache.commons.jexl3.JexlContext;
+ 
+ /**
+  *
+--- a/htsjdk/variant/variantcontext/VariantContextUtils.java
++++ b/htsjdk/variant/variantcontext/VariantContextUtils.java
+@@ -44,26 +44,19 @@
+ import java.util.Map;
+ import java.util.Set;
+ import java.util.function.Supplier;
+-import org.apache.commons.jexl2.Expression;
+-import org.apache.commons.jexl2.JexlEngine;
++import org.apache.commons.jexl3.JexlExpression;
++import org.apache.commons.jexl3.JexlBuilder;
++import org.apache.commons.jexl3.JexlEngine;
+ 
+ public class VariantContextUtils {
+     private static Set<String> MISSING_KEYS_WARNED_ABOUT = new HashSet<String>();
+ 
+-    /**
+-     * A {@link Lazy} {@link JexlEngine}, so that applications using this class without JEXL expressions, as VCF and BCF
+-     * decoding does, need neither JEXL nor the logging libraries it depends on. The initializer is an anonymous class
+-     * rather than a lambda because a lambda's bootstrap loads {@link JexlEngine} when this class is initialised.
+-     */
++    /** Use an explicit Supplier for lazy JEXL loading without relying on lambda class bootstrapping. */
+     @SuppressWarnings("Convert2Lambda")
+     public static final Lazy<JexlEngine> engine = new Lazy<>(new Supplier<>() {
+         @Override
+         public JexlEngine get() {
+-            final JexlEngine jexl = new JexlEngine();
+-            jexl.setSilent(false); // will throw errors now for selects that don't evaluate properly
+-            jexl.setLenient(false);
+-            jexl.setDebug(false);
+-            return jexl;
++            return new JexlBuilder().silent(false).strict(true).debug(false).create();
+         }
+     });
+ 
+@@ -233,7 +226,7 @@
+      */
+     public static class JexlVCMatchExp {
+         public String name;
+-        public Expression exp;
++        public JexlExpression exp;
+ 
+         /**
+          * Create a new matcher expression with name and JEXL expression exp
+@@ -241,7 +234,7 @@
+          * @param exp  expression
+          * @throws IllegalArgumentException if either argument is {@code null}
+          */
+-        public JexlVCMatchExp(String name, Expression exp) {
++        public JexlVCMatchExp(String name, JexlExpression exp) {
+             if (name == null) {
+                 throw new IllegalArgumentException("Cannot create JexlVCMatchExp with null name.");
+             }
+@@ -316,7 +309,7 @@
+             if (name == null || expStr == null)
+                 throw new IllegalArgumentException("Cannot create null expressions : " + name + " " + expStr);
+             try {
+-                Expression exp = engine.get().createExpression(expStr);
++                JexlExpression exp = engine.get().createExpression(expStr);
+                 exps.add(new JexlVCMatchExp(name, exp));
+             } catch (Exception e) {
+                 throw new IllegalArgumentException("Argument " + name + "has a bad value. Invalid expression used ("
+--- a/htsjdk/variant/variantcontext/JEXLMap.java
++++ b/htsjdk/variant/variantcontext/JEXLMap.java
+@@ -2,9 +2,9 @@
+ 
+ import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
+ import java.util.*;
+-import org.apache.commons.jexl2.JexlContext;
+-import org.apache.commons.jexl2.JexlException;
+-import org.apache.commons.jexl2.MapContext;
++import org.apache.commons.jexl3.JexlContext;
++import org.apache.commons.jexl3.JexlException;
++import org.apache.commons.jexl3.MapContext;
+ 
+ /**
+  * This is an implementation of a Map of {@link JexlVCMatchExp} to true or false values.
+--- a/htsjdk/samtools/util/BlockCompressedOutputStream.java
++++ b/htsjdk/samtools/util/BlockCompressedOutputStream.java
+@@ -53,7 +53,9 @@
+     private static int defaultCompressionLevel = BlockCompressedStreamConstants.DEFAULT_COMPRESSION_LEVEL;
+     private static DeflaterFactory defaultDeflaterFactory = new DeflaterFactory();
+ 
+-    /**
++    
++    private final boolean mTerminate;
++/**
+      * Sets the GZip compression level for subsequent BlockCompressedOutputStream object creation
+      * that do not specify the compression level.
+      * @param compressionLevel {@code 1 <= compressionLevel <= 9}
+@@ -161,7 +163,8 @@
+         codec = new BinaryCodec(path, true);
+         deflater = deflaterFactory.makeDeflater(compressionLevel, true);
+         log.debug("Using deflater: " + deflater.getClass().getSimpleName());
+-    }
++            mTerminate = true;
++}
+ 
+     /**
+      * Uses default compression level, which is 5 unless changed by setCompressionLevel
+@@ -179,7 +182,8 @@
+      * Use {@link #BlockCompressedOutputStream(OutputStream, Path, int, DeflaterFactory)} to specify a custom factory.
+      */
+     public BlockCompressedOutputStream(final OutputStream os, final Path file, final int compressionLevel) {
+-        this(os, file, compressionLevel, defaultDeflaterFactory);
++                this(os, file, compressionLevel, defaultDeflaterFactory, true);
++
+     }
+ 
+     /**
+@@ -191,6 +195,16 @@
+      */
+     public BlockCompressedOutputStream(
+             final OutputStream os, final Path file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
++        this(os, file, compressionLevel, deflaterFactory, true);
++    }
++
++    public BlockCompressedOutputStream(final OutputStream os, final java.io.File file,
++                                       final int compressionLevel, final boolean terminated) {
++        this(os, file == null ? null : file.toPath(), compressionLevel, defaultDeflaterFactory, terminated);
++    }
++
++    public BlockCompressedOutputStream(final OutputStream os, final Path file, final int compressionLevel,
++                                       final DeflaterFactory deflaterFactory, final boolean terminated) {
+         this.file = file;
+         codec = new BinaryCodec(os);
+         if (file != null) {
+@@ -198,7 +212,8 @@
+         }
+         deflater = deflaterFactory.makeDeflater(compressionLevel, true);
+         log.debug("Using deflater: " + deflater.getClass().getSimpleName());
+-    }
++            mTerminate = terminated;
++}
+ 
+     /**
+      *
+@@ -306,7 +321,8 @@
+      */
+     @Override
+     public void close() throws IOException {
+-        close(true);
++                close(mTerminate);
++
+     }
+ 
+     /**
+@@ -351,7 +367,8 @@
+         if (writeTerminatorBlock) {
+             // Can't re-open something that is not a regular file, e.g. a named pipe or an output stream
+             if (this.file == null || !Files.isRegularFile(this.file)) return;
+-            if (BlockCompressedInputStream.checkTermination(this.file)
++                    if (!writeTerminatorBlock) return;
++if (BlockCompressedInputStream.checkTermination(this.file)
+                     != BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
+                 throw new IOException("Terminator block not found after closing BGZF file " + this.file);
+             }

@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 # 
@@ -26,7 +28,7 @@ def extractVarscan2SNVFeatures(vcfname, tag, avg_depth=None):
         records = []
 
         if not avg_depth:
-            logging.warn("No average depths available, normalized depth features cannot be calculated")
+            logging.warning("No average depths available, normalized depth features cannot be calculated")
 
         hdrs = extractHeadersJSON(vcfname)
 
@@ -60,7 +62,7 @@ def extractVarscan2SNVFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = "."
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
 
             # fix missing features
@@ -73,7 +75,7 @@ def extractVarscan2SNVFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = 0
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
                 else:
                     if q.endswith("FREQ"):
@@ -101,10 +103,10 @@ def extractVarscan2SNVFeatures(vcfname, tag, avg_depth=None):
                     n_DP_ratio      = n_DP/float(avg_depth[rec["CHROM"]])
                     t_DP_ratio      = t_DP/float(avg_depth[rec["CHROM"]])
                 elif not rec["CHROM"] in has_warned:
-                    logging.warn("Cannot normalize depths on %s" % rec["CHROM"])
+                    logging.warning("Cannot normalize depths on %s" % rec["CHROM"])
                     has_warned[rec["CHROM"]] = True
             elif not "DPnorm" in has_warned:
-                logging.warn("Cannot normalize depths.")
+                logging.warning("Cannot normalize depths.")
                 has_warned["DPnorm"] = True
 
             n_allele_ref_count = rec[n_sample + "RD"]
@@ -201,7 +203,7 @@ def extractVarscan2IndelFeatures(vcfname, tag, avg_depth=None):
         records = []
 
         if not avg_depth:
-            logging.warn("No average depths available, normalized depth features cannot be calculated")
+            logging.warning("No average depths available, normalized depth features cannot be calculated")
 
         hdrs = extractHeadersJSON(vcfname)
 
@@ -234,7 +236,7 @@ def extractVarscan2IndelFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = "."
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
 
             # fix missing features
@@ -247,7 +249,7 @@ def extractVarscan2IndelFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = 0
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
                 else:
                     try:
@@ -268,10 +270,10 @@ def extractVarscan2IndelFeatures(vcfname, tag, avg_depth=None):
                     n_DP_ratio      = n_DP/float(avg_depth[rec["CHROM"]])
                     t_DP_ratio      = t_DP/float(avg_depth[rec["CHROM"]])
                 elif not rec["CHROM"] in has_warned:
-                    logging.warn("Cannot normalize depths on %s" % rec["CHROM"])
+                    logging.warning("Cannot normalize depths on %s" % rec["CHROM"])
                     has_warned[rec["CHROM"]] = True
             elif not "DPnorm" in has_warned:
-                logging.warn("Cannot normalize depths.")
+                logging.warning("Cannot normalize depths.")
                 has_warned["DPnorm"] = True
 
             n_allele_ref_count = rec[n_sample + "RD"]

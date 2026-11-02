@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import sys
 import os
 import logging
@@ -10,12 +12,12 @@ from fastasize import fastaContigLengths, calculateLength
 
 def main():
     locations = "chrMT chrY:1-10"
-    fastacontiglengths = "{'chrY': 59373566, 'chrM': 16571}"
+    fastacontiglengths = {'chrY': 59373566, 'chrM': 16571}
     total_length = calculateLength(fastacontiglengths, locations)
     if total_length == 10:
         logging.info("fastasize test SUCCEEDED!")
     else:
-        logging.error("fastasize test FAILED!")
+        raise AssertionError("fastasize test FAILED!")
 
 
 if __name__ == "__main__":

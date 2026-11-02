@@ -1,0 +1,40 @@
+# Linux x86_64. Build with --network host when proxy is on host loopback.
+FROM ubuntu@sha256:186072bba1b2f436cbb91ef2567abca677337cfc786c86e107d25b7072feef0c
+ARG BUILD_PROXY=socks5h://127.0.0.1:7890
+ARG PROXYCHAINS_SERVER="socks5 127.0.0.1 7890"
+ARG PIXI_VERSION=0.70.2
+ARG HARNESS_JOBS=4
+ENV DEBIAN_FRONTEND=noninteractive TMPDIR=/opt/happy-tmp
+RUN mkdir -p /opt/happy-tmp && \
+    apt-get -o Acquire::http::Proxy="$BUILD_PROXY" -o Acquire::https::Proxy="$BUILD_PROXY" -o APT::Update::Error-Mode=any update && \
+    apt-get -o Acquire::http::Proxy="$BUILD_PROXY" -o Acquire::https::Proxy="$BUILD_PROXY" install -y --no-install-recommends \
+      ca-certificates curl proxychains4 bzip2 xz-utils tar bash coreutils \
+      build-essential binutils ripgrep git patch && \
+    rm -rf /var/lib/apt/lists/* && \
+    printf 'strict_chain\nproxy_dns\n[ProxyList]\n%s\n' "$PROXYCHAINS_SERVER" > /etc/proxychains4.conf && \
+    ln -s /usr/bin/proxychains4 /usr/local/bin/proxychains
+RUN mkdir -p /opt/pixi-download && \
+    proxychains -q curl -fL --retry 3 \
+      "https://github.com/prefix-dev/pixi/releases/download/v${PIXI_VERSION}/pixi-x86_64-unknown-linux-musl.tar.gz" \
+      -o /opt/pixi-download/pixi.tar.gz && \
+    tar -xzf /opt/pixi-download/pixi.tar.gz -C /usr/local/bin pixi && \
+    rm -rf /opt/pixi-download && pixi --version
+WORKDIR /opt/bootstrap-source
+COPY pixi.toml pixi.lock ./
+COPY external/ external/
+RUN bash external/make_dependencies.sh
+RUN PYTHON_BOOTSTRAP=/opt/bootstrap-source/.pixi/envs/default/bin/python \
+      HARNESS_JOBS="$HARNESS_JOBS" bash external/bootstrap.sh /opt/bootstrap && \
+    run=$(ls -d /opt/bootstrap/run-*) && \
+    test "$(printf '%s\n' "$run" | wc -l)" -eq 1 && \
+    chmod 0755 "$run" && \
+    ln -s /opt/bootstrap-source/.pixi/envs/default /opt/happy-deps && \
+    ln -s /opt/bootstrap-source/external/toolchain/.pixi/envs/default /opt/happy-toolchain && \
+    ln -s "$run/python" /opt/python && ln -s "$run/openssl" /opt/openssl && \
+    ln -s "$run/rtg6/rtg-build/install" /opt/rtg && \
+    jdk=$(ls -d "$run"/source-bundle/sources/jdk/*) && ln -s "$jdk" /opt/jdk
+ENV JAVA_HOME=/opt/jdk CMAKE_GENERATOR=Ninja
+ENV PATH=/opt/happy-deps/bin:/opt/python/bin:$PATH
+RUN /opt/python/bin/python3.14 -I -c 'import ssl,numpy,pandas,pysam; print(ssl.OPENSSL_VERSION)' && \
+    /opt/rtg/rtg version
+WORKDIR /opt

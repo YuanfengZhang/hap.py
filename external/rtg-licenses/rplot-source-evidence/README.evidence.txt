@@ -1,0 +1,1 @@
+License evidence from official RPlot source tree 67c13667d2b1bcb8d8dda8a9c1de9ae323102b3b. Exact correspondence between the remaining classes in the actual RPlot.jar and this source has not been established. Embedded VectorGraphics2D is documented separately and is not covered by this BSD license.

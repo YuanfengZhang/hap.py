@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -20,30 +22,37 @@ try:
     import Haplo.version as vs  # pylint: disable=E0401,E0611
     version = vs.__version__
     has_sge = vs.has_sge
+    has_vcfeval = vs.has_vcfeval
 except ImportError:
-    logging.warn("No version found. Please follow the installation instructions.")
+    logging.warning("No version found. Please follow the installation instructions.")
     version = "unknown"
     has_sge = False
+    has_vcfeval = False
 
 
-def defaultReference():
-    to_try = ['/opt/hap.py-data/hg19.fa']
-    try:
-        to_try.insert(0, os.environ["HGREF"])
-    except:
-        pass
+def defaultReference(reference: str | None = None) -> str | None:
+    """Resolve explicit reference > HGREF > HG19 > conventional data path.
 
-    try:
-        to_try.insert(0, os.environ["HG19"])
-    except:
-        pass
-
-    for x in to_try:
-        if os.path.exists(x):
-            return x
-    logging.warn("No reference file found at default locations. You can set the environment"
-                 " variable 'HGREF' or 'HG19' to point to a suitable Fasta file.")
-    return None
+    A configured but invalid reference is an error, never a silent fallback to
+    a different assembly. With no configuration, absence returns None so --help
+    remains usable without reference data.
+    """
+    source = 'explicit reference'
+    candidate = reference
+    if not candidate:
+        for key in ('HGREF', 'HG19'):
+            if os.environ.get(key):
+                source, candidate = key, os.environ[key]
+                break
+    if not candidate:
+        candidate = '/opt/hap.py-data/hg19.fa'
+        if not os.path.isfile(candidate):
+            return None
+    candidate = os.path.abspath(os.path.expanduser(candidate))
+    if not os.path.isfile(candidate) or not os.access(candidate, os.R_OK):
+        raise ValueError(f'{source} FASTA is not readable: {candidate}. '
+                         'Use -r/--reference or set HGREF to the correct FASTA.')
+    return candidate
 
 
 def which(program):
@@ -75,25 +84,14 @@ def init():
             raise Exception("Dependency path %s not found" % pp)
         os.environ["PATH"] = pp + os.pathsep + os.environ["PATH"]
 
-    executables = [
-        "blocksplit",
-        "hapenum",
-        "dipenum",
-        "hapcmp",
-        "xcmp",
-        "bcftools",
-        "samtools",
-    ]
-
-    for x in executables:
-        if not which(x):
-            raise Exception("Dependency %s not found" % x)
+    # Validate tools when invoked: each CLI uses a different subset, and
+    # importing helpers or running --help must not require unused executables.
 
     os.environ['DYLD_LIBRARY_PATH'] = os.path.join(base, "lib")
     os.environ['LD_LIBRARY_PATH'] = os.path.join(base, "lib")
 
 
-init()
+# Initialization is explicit at CLI execution, never during worker imports.
 
 # safely import here
 # noinspection PyUnresolvedReferences
@@ -114,49 +112,29 @@ class LoggingWriter(object):
             logging.log(self.level, message)
 
 
-def writeVCFHeader(filelike, extrainfo="", chrprefix="chr"):
-    """ write a VCF header
+def writeVCFHeader(filelike, extrainfo='', chrprefix=None, reference: str | None = None) -> None:
+    """Write a VCF header using the actual FASTA sequence dictionary.
+
+    chrprefix is retained for call compatibility but may not rename reference
+    sequences. FASTA contig identifiers are authoritative.
     """
-    header = ["CHROM",
-              "POS",
-              "ID",
-              "REF",
-              "ALT",
-              "QUAL",
-              "FILTER",
-              "INFO",
-              "FORMAT",
-              "SIMPLE"]
-
-    infos = ['##fileformat=VCFv4.1',
-             '##reference=hg19',
+    reference = defaultReference(reference)
+    if reference is None:
+        raise ValueError('VCF header requires a FASTA: pass reference or set HGREF.')
+    with pysam.FastaFile(reference) as fasta:
+        contigs = list(zip(fasta.references, fasta.lengths))
+    extra = extrainfo if isinstance(extrainfo, list) else extrainfo.splitlines()
+    if any(line.startswith(('##reference=', '##contig=')) for line in extra):
+        raise ValueError('Reference and contig metadata must come from the FASTA, not extrainfo.')
+    infos = ['##fileformat=VCFv4.2', f'##reference={reference}',
              '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">']
-
-    if extrainfo:
-        if type(extrainfo) is list:
-            infos += extrainfo
-        else:
-            infos += extrainfo.split("\n")
-
-    contigs = [["1", "249250621"], ["2", "243199373"], ["3", "198022430"], ["4", "191154276"],
-               ["5", "180915260"], ["6", "171115067"], ["7", "159138663"], ["8", "146364022"],
-               ["9", "141213431"], ["10", "135534747"], ["11", "135006516"],
-               ["12", "133851895"], ["13", "115169878"], ["14", "107349540"], ["15", "102531392"],
-               ["16", "90354753"], ["17", "81195210"], ["18", "78077248"], ["19", "59128983"],
-               ["20", "63025520"], ["21", "48129895"], ["22", "51304566"], ["X", "155270560"]]
-
-    meta = ["##fileDate=" + date.today().isoformat(),
-            "##source=HaploCompare",
-            "##source_version=%s" % version]
-
-    for i in infos:
-        filelike.write(i + "\n")
-    for c in contigs:
-        filelike.write('##contig=<ID=' + chrprefix + c[0] + ',length=' + c[1] + '>\n')
-    for i in meta:
-        filelike.write(i + "\n")
-
-    filelike.write("#" + "\t".join(header) + "\n")
+    infos.extend(extra)
+    infos.extend(f'##contig=<ID={name},length={length}>' for name, length in contigs)
+    infos.extend(['##fileDate=' + date.today().isoformat(),
+                  '##source=HaploCompare', f'##source_version={version}'])
+    for line in infos:
+        filelike.write(line + '\n')
+    filelike.write('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSIMPLE\n')
 
 
 def mkdir_p(path):
@@ -172,33 +150,23 @@ def mkdir_p(path):
         raise Exception("Failed to create directory %s" % path)
 
 
-class BGZipFile(object):
-    """ BGZip file helper
-    """
+class BGZipFile:
+    """BGZF writer accepting UTF-8 text or raw bytes, without shell pipes."""
 
-    def __init__(self, filename, force=False):
-        """ Make a subprocess for bgzip
-        :param filename: name of the output file
-        :param force: true to overwrite if file exists
-        """
+    def __init__(self, filename: str, force: bool = False) -> None:
         if os.path.exists(filename) and not force:
-            raise Exception("File %s exists, use force=True to overwrite" % filename)
-
-        self.write_file = open(filename, "wb")
-        zip_pipe = subprocess.Popen(["bgzip", "-f"],
-                                    stdin=subprocess.PIPE,
-                                    stdout=self.write_file,
-                                    stderr=subprocess.PIPE,
-                                    shell=True)
-        self.zip_pipe = zip_pipe
+            raise FileExistsError(f'File {filename} exists, use force=True to overwrite')
         self.name = filename
+        self.write_file = pysam.BGZFile(filename, 'wb')
 
-    def close(self):
-        self.zip_pipe.stdin.flush()
-        self.zip_pipe.stdin.close()
-        self.zip_pipe.wait()
-        self.write_file.flush()
+    def close(self) -> None:
         self.write_file.close()
 
-    def write(self, *args, **kwargs):
-        self.zip_pipe.stdin.write(*args, **kwargs)
+    def write(self, data: str | bytes) -> int:
+        return self.write_file.write(data.encode('utf-8') if isinstance(data, str) else data)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.close()

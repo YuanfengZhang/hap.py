@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -19,6 +21,7 @@ import sys
 import time
 import platform
 import copy
+from importlib.metadata import distributions
 
 import Tools
 
@@ -34,7 +37,7 @@ def sessionInfo():
               'version': version,
               'runInfo': [{"key": "commandline", "value": " ".join(sys.argv)}],
               'uname': " / ".join(platform.uname()),
-              'dist': " / ".join(platform.dist()),
+              'dist': platform.freedesktop_os_release().get('PRETTY_NAME', '') if os.path.isfile('/etc/os-release') else platform.system(),
               'mac_ver': " / ".join([platform.mac_ver()[0], platform.mac_ver()[2]]),
               'python_implementation': platform.python_implementation(),
               'python_version': platform.python_version(),
@@ -45,7 +48,7 @@ def sessionInfo():
                       "module": "%s" % os.path.basename(sys.argv[0]),
                       "description": "%s generated this JSON file via command line %s" % (
                           sys.argv[0], " ".join(sys.argv))}},
-              'environment': {str(k): str(os.environ[k]) for k in os.environ.keys()}}
+              'environment': {str(k): str(os.environ[k]) for k in list(os.environ.keys())}}
 
     result["python_prefix"] = sys.prefix
     if hasattr(sys, 'real_prefix'):
@@ -57,15 +60,12 @@ def sessionInfo():
         result["cpus"] = psutil.cpu_count()
         result["logical_cpus"] = psutil.cpu_count(True)
         result["cpu_freq"] = psutil.cpu_freq()
-        result["memory"] = dict(psutil.virtual_memory().__dict__)
+        result["memory"] = dict(psutil.virtual_memory()._asdict())
     except:
         pass
 
     try:
-        import pip
-        pip_packages = []
-        for i in pip.get_installed_distributions(local_only=True):
-            pip_packages.append(str(i))
+        pip_packages = sorted(f'{d.metadata["Name"]}=={d.version}' for d in distributions())
 
         result["pip_packages"] = pip_packages
     except:

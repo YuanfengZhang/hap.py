@@ -386,12 +386,12 @@ int main(int argc, char* argv[]) {
         vi.getProcessor().setReader(r, VariantBufferMode::buffer_block, 100);
 
         VariantProcessor & proc = vi.getProcessor();
-        VariantProcessor & proc_homref = vi.getProcessor(VariantInput::homref);
+        VariantProcessor *proc_homref = p_homref_writer ? &vi.getProcessor(VariantInput::homref) : nullptr;
 
         int64_t rcount = 0;
 
         bool advance1 = proc.advance();
-        bool advance2 = p_homref_writer ? proc_homref.advance() : false;
+        bool advance2 = p_homref_writer ? proc_homref->advance() : false;
 
         while(advance1 || advance2)
         {
@@ -411,9 +411,9 @@ int main(int argc, char* argv[]) {
                     // chromosome changed and location was given => abort
                     while(advance2)
                     {
-                        Variants & v = proc_homref.current();
+                        Variants & v = proc_homref->current();
                         p_homref_writer->put(v);
-                        advance2 = homref_split ? proc_homref.advance() : false;
+                        advance2 = homref_split ? proc_homref->advance() : false;
                     }
                     break;
                 }
@@ -431,9 +431,9 @@ int main(int argc, char* argv[]) {
             // make sure our homref variant output doesn't fill up all memory
             while(advance2 && p_homref_writer)
             {
-                Variants & v = proc_homref.current();
+                Variants & v = proc_homref->current();
                 p_homref_writer->put(v);
-                advance2 = proc_homref.advance();
+                advance2 = proc_homref->advance();
             }
 
             advance1 = proc.advance();

@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -35,7 +37,9 @@ import tempfile
 import gzip
 
 scriptDir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'python27')))
+sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'hap.py')))
+# CLI siblings (pre/qfy) must remain importable under Python isolated mode.
+sys.path.insert(0, scriptDir)
 
 import Tools
 import Tools.vcfextract
@@ -46,7 +50,43 @@ import Haplo.gvcf2bed
 from Tools import fastasize
 
 
-def quantify(args):
+def resolve_regions(args: argparse.Namespace) -> dict[str, str]:
+    """Resolve confident and stratification regions in their original order."""
+    qfyregions = {}
+
+    if args.fp_bedfile:
+        if not os.path.exists(args.fp_bedfile):
+            raise Exception('FP / Confident region file not found at %s' % args.fp_bedfile)
+        qfyregions['CONF'] = args.fp_bedfile
+
+    if args.strat_tsv:
+        with open(args.strat_tsv) as sf:
+            for l in sf:
+                n, _, f = l.strip().partition('\t')
+                if n in qfyregions:
+                    raise Exception('Duplicate stratification region ID: %s' % n)
+                if not f:
+                    if n:
+                        raise Exception('No file for stratification region %s' % n)
+                    else:
+                        continue
+                if not os.path.exists(f):
+                    f = os.path.join(os.path.abspath(os.path.dirname(args.strat_tsv)), f)
+                if not os.path.exists(f):
+                    raise Exception('Quantification region file %s not found' % f)
+                qfyregions[n] = f
+
+    if args.strat_regions:
+        for r in args.strat_regions:
+            n, _, f = r.partition(':')
+            if not os.path.exists(f):
+                raise Exception('Quantification region file %s not found' % f)
+            qfyregions[n] = f
+
+    return qfyregions
+
+
+def quantify(args: argparse.Namespace) -> None:
     """ Run quantify and write tables """
     vcf_name = args.in_vcf[0]
 
@@ -55,13 +95,9 @@ def quantify(args):
 
     logging.info("Counting variants...")
 
-    truth_or_query_is_bcf = False
-    try:
-        truth_or_query_is_bcf = args.vcf1.endswith(".bcf") and args.vcf2.endswith(".bcf")
-    except:
-        # args.vcf1 and args.vcf2 are only available when we're running
-        # inside hap.py.
-        pass
+    truth_or_query_is_bcf = all(
+        getattr(args, name, '').endswith('.bcf') for name in ('vcf1', 'vcf2')
+    )
 
     if args.bcf or truth_or_query_is_bcf:
         internal_format_suffix = ".bcf"
@@ -71,45 +107,12 @@ def quantify(args):
     output_vcf = args.reports_prefix + internal_format_suffix
     roc_table = args.reports_prefix + ".roc.tsv"
 
-    qfyregions = {}
-
-    if args.fp_bedfile:
-        if not os.path.exists(args.fp_bedfile):
-            raise Exception("FP / Confident region file not found at %s" % args.fp_bedfile)
-        qfyregions["CONF"] = args.fp_bedfile
-
-    if args.strat_tsv:
-        with open(args.strat_tsv) as sf:
-            for l in sf:
-                n, _, f = l.strip().partition("\t")
-                if n in qfyregions:
-                    raise Exception("Duplicate stratification region ID: %s" % n)
-                if not f:
-                    if n:
-                        raise Exception("No file for stratification region %s" % n)
-                    else:
-                        continue
-                if not os.path.exists(f):
-                    f = os.path.join(os.path.abspath(os.path.dirname(args.strat_tsv)), f)
-                if not os.path.exists(f):
-                    raise Exception("Quantification region file %s not found" % f)
-                qfyregions[n] = f
-
-    if args.strat_regions:
-        for r in args.strat_regions:
-            n, _, f = r.partition(":")
-            if not os.path.exists(f):
-                raise Exception("Quantification region file %s not found" % f)
-            qfyregions[n] = f
+    qfyregions = resolve_regions(args)
 
     if vcf_name == output_vcf or vcf_name == output_vcf + internal_format_suffix:
         raise Exception("Cannot overwrite input VCF: %s would overwritten with output name %s." % (vcf_name, output_vcf))
 
-    roc_header = args.roc
-    try:
-        roc_header = args.roc_header
-    except:
-        pass
+    roc_header = getattr(args, 'roc_header', args.roc)
 
     Haplo.quantify.run_quantify(vcf_name,
                                 roc_table,
@@ -203,8 +206,8 @@ def quantify(args):
 
     # in default mode, print result summary to stdout
     if not args.quiet and not args.verbose:
-        print "Benchmarking Summary:"
-        print essential_numbers.to_string(index=False)
+        print("Benchmarking Summary:")
+        print(essential_numbers.to_string(index=False))
 
     # keep this for verbose output
     if not args.verbose:
@@ -213,12 +216,12 @@ def quantify(args):
         except:
             pass
 
-    for t in res.iterkeys():
+    for t in res.keys():
         metrics_output["metrics"].append(dataframeToMetricsTable("roc." + t, res[t]))
 
     # gzip JSON output
     if args.write_json:
-        with gzip.open(args.reports_prefix + ".metrics.json.gz", "w") as fp:
+        with gzip.open(args.reports_prefix + ".metrics.json.gz", "wt", encoding="utf-8") as fp:
             json.dump(metrics_output, fp)
 
 
@@ -334,8 +337,8 @@ def main():
 
     args.runner = "qfy.py"
 
-    if not args.ref:
-        args.ref = Tools.defaultReference()
+    Tools.init()
+    args.ref = Tools.defaultReference(args.ref)
 
     args.scratch_prefix = tempfile.gettempdir()
 
@@ -362,7 +365,7 @@ def main():
         exit(0)
 
     if args.version:
-        print "qfy.py %s" % Tools.version
+        print("qfy.py %s" % Tools.version)
         exit(0)
 
     if args.fp_bedfile and args.preprocessing_truth_confregions:

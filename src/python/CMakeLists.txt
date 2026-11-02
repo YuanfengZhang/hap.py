@@ -10,35 +10,35 @@ foreach(FILENAME ${COPY_FILES})
     set(DST "${CMAKE_BINARY_DIR}/bin/${TARGETNAME}")
 
     add_custom_command(
-      TARGET python_bin
+      TARGET python_bin POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
 endforeach(FILENAME)
 
 SET(PYTHON_SRC "${CMAKE_SOURCE_DIR}/src/python/Haplo")
-SET(PYTHON_DST "${CMAKE_BINARY_DIR}/lib/python27/Haplo")
+SET(PYTHON_DST "${CMAKE_BINARY_DIR}/lib/hap.py/Haplo")
 add_custom_target(python_src1 ALL COMMENT "Copying ${PYTHON_SRC} -> ${PYTHON_DST}")
 
-add_custom_command(TARGET python_src1
+add_custom_command(TARGET python_src1 POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_SRC} ${PYTHON_DST}
 )
 
 SET(PYTHON_SRC "${CMAKE_SOURCE_DIR}/src/python/Somatic")
-SET(PYTHON_DST "${CMAKE_BINARY_DIR}/lib/python27/Somatic")
+SET(PYTHON_DST "${CMAKE_BINARY_DIR}/lib/hap.py/Somatic")
 add_custom_target(python_src2 ALL COMMENT "Copying ${PYTHON_SRC} -> ${PYTHON_DST}")
 
-add_custom_command(TARGET python_src2
+add_custom_command(TARGET python_src2 POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_SRC} ${PYTHON_DST}
 )
 
 SET(PYTHON_SRC "${CMAKE_SOURCE_DIR}/src/python/Tools")
-SET(PYTHON_DST "${CMAKE_BINARY_DIR}/lib/python27/Tools")
+SET(PYTHON_DST "${CMAKE_BINARY_DIR}/lib/hap.py/Tools")
 add_custom_target(python_src3 ALL COMMENT "Copying ${PYTHON_SRC} -> ${PYTHON_DST}")
 
-add_custom_command(TARGET python_src3
+add_custom_command(TARGET python_src3 POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PYTHON_SRC} ${PYTHON_DST}
 )
 
 configure_file("Haplo/version.py.in"
-               "${CMAKE_BINARY_DIR}/lib/python27/Haplo/version.py")
+               "${CMAKE_BINARY_DIR}/lib/hap.py/Haplo/version.py")
 

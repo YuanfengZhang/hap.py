@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -22,18 +24,18 @@ import subprocess
 import tempfile
 import time
 import shutil
-import pipes
+import shlex
 
-import Haplo.version  # pylint: disable=E0611,E0401
+import Tools
 
 
 def findVCFEval():
     """ Return default version of rtgtools if hap.py was built with
         rtgtools included.
     """
-    if Haplo.version.has_vcfeval:
+    if getattr(Tools, "has_vcfeval", False):
         base = os.path.join(os.path.dirname(__file__),
-                            "..",   # python27
+                            "..",   # private Python modules
                             "..",   # lib
                             "..",   # hap.py-base
                             "libexec",
@@ -46,7 +48,7 @@ def findVCFEval():
         elif os.path.isfile(bfile2) and os.access(bfile2, os.X_OK):
             return bfile2
         else:
-            logging.warn(("Could not find our included version of rtg-tools at %s. " % base) +
+            logging.warning(("Could not find our included version of rtg-tools at %s. " % base) +
                          "To use vcfeval for comparison, you might have to specify "
                          "its location on the command line.")
             return "rtg"
@@ -73,7 +75,7 @@ def runVCFEval(vcf1, vcf2, target, args):
             logging.info("Using vcfeval template from %s" % (args.ref[:-3] + ".sdf"))
             args.engine_vcfeval_template = args.ref[:-3] + ".sdf"
         if not args.engine_vcfeval_template or not os.path.exists(args.engine_vcfeval_template):
-            logging.warn("Creating template for vcfeval. " +
+            logging.warning("Creating template for vcfeval. " +
                          ("You can speed this up by supplying a SDF template that corresponds to %s" % args.ref))
             del_sdf = True
             stf = tempfile.NamedTemporaryFile(dir=args.scratch_prefix,
@@ -82,14 +84,14 @@ def runVCFEval(vcf1, vcf2, target, args):
             stf.close()
             args.engine_vcfeval_template = stf.name
             runme = "%s format -o %s %s" % (
-                pipes.quote(args.engine_vcfeval),
-                pipes.quote(args.engine_vcfeval_template),
-                pipes.quote(args.ref))
+                shlex.quote(args.engine_vcfeval),
+                shlex.quote(args.engine_vcfeval_template),
+                shlex.quote(args.ref))
             logging.info(runme)
-            po = subprocess.Popen(runme,
-                                  shell=True,
+            po = subprocess.Popen(shlex.split(runme),
+                                  shell=False,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
+                                  stderr=subprocess.PIPE, text=True, encoding="utf-8")
             o, e = po.communicate()
             po.wait()
             rc = po.returncode
@@ -99,27 +101,27 @@ def runVCFEval(vcf1, vcf2, target, args):
                 logging.info("RTG output: \n%s\n / \n%s\n" % (o, e))
 
         runme = "%s vcfeval -b %s -c %s -t %s -o %s -T %i -m ga4gh --ref-overlap" % (
-            pipes.quote(args.engine_vcfeval),
-            pipes.quote(vcf1),
-            pipes.quote(vcf2),
-            pipes.quote(args.engine_vcfeval_template),
-            vtf.name,
+            shlex.quote(args.engine_vcfeval),
+            shlex.quote(vcf1),
+            shlex.quote(vcf2),
+            shlex.quote(args.engine_vcfeval_template),
+            shlex.quote(vtf.name),
             args.threads)
 
         if not args.pass_only:
             runme += " --all-records"
 
         if args.roc:
-            runme += " -f %s" % pipes.quote(args.roc)
+            runme += " -f %s" % shlex.quote(args.roc)
 
         if args.engine_scmp_distance:
             runme += " --Xloose-match-distance=%i" % args.engine_scmp_distance
 
         logging.info(runme)
-        po = subprocess.Popen(runme,
-                              shell=True,
+        po = subprocess.Popen(shlex.split(runme),
+                              shell=False,
                               stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+                              stderr=subprocess.PIPE, text=True, encoding="utf-8")
 
         o, e = po.communicate()
 
@@ -139,12 +141,12 @@ def runVCFEval(vcf1, vcf2, target, args):
         # remove temp path
         try:
             shutil.rmtree(vtf.name)
-        except:
+        except FileNotFoundError:
             pass
         if del_sdf:
             try:
                 shutil.rmtree(args.engine_vcfeval_template)
-            except:
+            except FileNotFoundError:
                 pass
 
     elapsed = time.time() - starttime

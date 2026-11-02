@@ -1,0 +1,16 @@
+{
+  "artifacts": [
+    {
+      "name": "jlibdeflate",
+      "commit": "c4d9c72f361c65b1a906675e4f3071d6f325eb4d",
+      "url": "https://codeload.github.com/fulcrumgenomics/jlibdeflate/tar.gz/c4d9c72f361c65b1a906675e4f3071d6f325eb4d",
+      "sha256": "63dda1078bdb1f31a3fc76c47093b641a5405b339e40b9c3902d2e51527bc8de"
+    },
+    {
+      "name": "libdeflate",
+      "commit": "92e6a0db9fa848d742f9eb286c92afc60f2c3dda",
+      "url": "https://codeload.github.com/ebiggers/libdeflate/tar.gz/92e6a0db9fa848d742f9eb286c92afc60f2c3dda",
+      "sha256": "af56498149827f5a5e3f1ffb653c79c8c75557f3dc2caf6002cac38a59b844b7"
+    }
+  ]
+}

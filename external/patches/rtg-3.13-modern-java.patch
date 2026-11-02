@@ -1,0 +1,191 @@
+--- a/src/main/java/com/rtg/reader/SequencesReaderReferenceSource.java
++++ b/src/main/java/com/rtg/reader/SequencesReaderReferenceSource.java
+@@ -117,6 +117,14 @@
+   }
+ 
+   @Override
++  public byte[] getReferenceBasesByRegion(final SAMSequenceRecord record, int start, int length) {
++    byte[] bases = getReferenceBases(record, false);
++    if (bases == null) return null;
++    if (start < 0 || length < 0 || start > bases.length) throw new IllegalArgumentException("Invalid reference region");
++    return java.util.Arrays.copyOfRange(bases, start, (int) Math.min((long) bases.length, (long) start + length));
++  }
++
++  @Override
+   public void close() throws IOException {
+     mReader.close();
+   }
+--- a/src/main/java/com/rtg/report/RtgVelocityLogChute.java
++++ b/src/main/java/com/rtg/report/RtgVelocityLogChute.java
+@@ -29,44 +29,46 @@
+  */
+ package com.rtg.report;
+ 
+-import org.apache.velocity.runtime.RuntimeServices;
+-import org.apache.velocity.runtime.log.LogChute;
+-
++import org.slf4j.helpers.MarkerIgnoringBase;
++import org.slf4j.helpers.MessageFormatter;
+ import com.rtg.util.License;
+ import com.rtg.util.diagnostic.Diagnostic;
+ 
+-/**
+- * For Stupid velocity
+- */
+-public class RtgVelocityLogChute implements LogChute {
+-  @Override
+-  public void init(RuntimeServices rs) {
+-  }
+-
+-  @Override
+-  public void log(int level, String message) {
+-    if (isLevelEnabled(level)) {
+-      if (level >= INFO_ID) {
+-        Diagnostic.userLog(message);
+-      } else if (level == DEBUG_ID) {
+-        Diagnostic.developerLog(message);
+-      }
+-    }
+-  }
+-
+-  @Override
+-  public void log(int level, String message, Throwable t) {
+-    if (isLevelEnabled(level)) {
+-      if (level >= INFO_ID) {
+-        Diagnostic.userLog(message);
+-      } else if (level == DEBUG_ID) {
+-        Diagnostic.developerLog(message);
+-      }
+-    }
+-  }
+-
+-  @Override
+-  public boolean isLevelEnabled(int level) {
+-    return License.isDeveloper() && level >= DEBUG_ID || level >= INFO_ID;
+-  }
++/** Bridge Velocity 2 logging to the existing RTG diagnostic stream. */
++public class RtgVelocityLogChute extends MarkerIgnoringBase {
++  public static final int TRACE_ID=-1, DEBUG_ID=0, INFO_ID=1, WARN_ID=2, ERROR_ID=3;
++  public RtgVelocityLogChute() { name = "RTG Velocity"; }
++  public boolean isLevelEnabled(int level) { return level >= INFO_ID || License.isDeveloper() && level >= DEBUG_ID; }
++  public void log(int level, String message) { if (isLevelEnabled(level)) { if (level >= INFO_ID) Diagnostic.userLog(message); else Diagnostic.developerLog(message); } }
++  public void log(int level, String message, Throwable error) { log(level, message + ": " + error); }
++  public boolean isTraceEnabled() { return isLevelEnabled(TRACE_ID); }
++  public void trace(String msg) { log(TRACE_ID, msg); }
++  public void trace(String msg, Throwable t) { log(TRACE_ID, msg, t); }
++  public void trace(String fmt, Object arg) { log(TRACE_ID, MessageFormatter.format(fmt, arg).getMessage()); }
++  public void trace(String fmt, Object a, Object b) { log(TRACE_ID, MessageFormatter.format(fmt, a, b).getMessage()); }
++  public void trace(String fmt, Object... args) { log(TRACE_ID, MessageFormatter.arrayFormat(fmt, args).getMessage()); }
++  public boolean isDebugEnabled() { return isLevelEnabled(DEBUG_ID); }
++  public void debug(String msg) { log(DEBUG_ID, msg); }
++  public void debug(String msg, Throwable t) { log(DEBUG_ID, msg, t); }
++  public void debug(String fmt, Object arg) { log(DEBUG_ID, MessageFormatter.format(fmt, arg).getMessage()); }
++  public void debug(String fmt, Object a, Object b) { log(DEBUG_ID, MessageFormatter.format(fmt, a, b).getMessage()); }
++  public void debug(String fmt, Object... args) { log(DEBUG_ID, MessageFormatter.arrayFormat(fmt, args).getMessage()); }
++  public boolean isInfoEnabled() { return isLevelEnabled(INFO_ID); }
++  public void info(String msg) { log(INFO_ID, msg); }
++  public void info(String msg, Throwable t) { log(INFO_ID, msg, t); }
++  public void info(String fmt, Object arg) { log(INFO_ID, MessageFormatter.format(fmt, arg).getMessage()); }
++  public void info(String fmt, Object a, Object b) { log(INFO_ID, MessageFormatter.format(fmt, a, b).getMessage()); }
++  public void info(String fmt, Object... args) { log(INFO_ID, MessageFormatter.arrayFormat(fmt, args).getMessage()); }
++  public boolean isWarnEnabled() { return isLevelEnabled(WARN_ID); }
++  public void warn(String msg) { log(WARN_ID, msg); }
++  public void warn(String msg, Throwable t) { log(WARN_ID, msg, t); }
++  public void warn(String fmt, Object arg) { log(WARN_ID, MessageFormatter.format(fmt, arg).getMessage()); }
++  public void warn(String fmt, Object a, Object b) { log(WARN_ID, MessageFormatter.format(fmt, a, b).getMessage()); }
++  public void warn(String fmt, Object... args) { log(WARN_ID, MessageFormatter.arrayFormat(fmt, args).getMessage()); }
++  public boolean isErrorEnabled() { return isLevelEnabled(ERROR_ID); }
++  public void error(String msg) { log(ERROR_ID, msg); }
++  public void error(String msg, Throwable t) { log(ERROR_ID, msg, t); }
++  public void error(String fmt, Object arg) { log(ERROR_ID, MessageFormatter.format(fmt, arg).getMessage()); }
++  public void error(String fmt, Object a, Object b) { log(ERROR_ID, MessageFormatter.format(fmt, a, b).getMessage()); }
++  public void error(String fmt, Object... args) { log(ERROR_ID, MessageFormatter.arrayFormat(fmt, args).getMessage()); }
+ }
+--- a/src/main/java/com/rtg/report/VelocityReportUtils.java
++++ b/src/main/java/com/rtg/report/VelocityReportUtils.java
+@@ -51,10 +51,10 @@
+ 
+   static final String TEMPLATE_DIR = "com/rtg/report/resources";
+   static {
+-    Velocity.setProperty(VelocityEngine.RESOURCE_LOADER, "class");
+-    Velocity.setProperty("class.resource.loader.class", ClasspathResourceLoader.class.getCanonicalName());
+-    Velocity.setProperty("class.resource.loader.path", "/");
+-    Velocity.setProperty("runtime.log.logsystem.class", RtgVelocityLogChute.class.getCanonicalName());
++    Velocity.setProperty("resource.loaders", "class");
++    Velocity.setProperty("resource.loader.class.class", ClasspathResourceLoader.class.getCanonicalName());
++    Velocity.setProperty("resource.loader.class.path", "/");
++    Velocity.setProperty("runtime.log.instance", new RtgVelocityLogChute());
+     Velocity.init();
+   }
+ 
+--- a/src/main/java/com/rtg/sam/SamUtils.java
++++ b/src/main/java/com/rtg/sam/SamUtils.java
+@@ -234,8 +234,13 @@
+   /** The filename extension used for BAM index files */
+   public static final String BAI_SUFFIX = BamIndexer.BAM_INDEX_EXTENSION;
+ 
+-  static final CRAMReferenceSource NO_CRAM_REFERENCE_SOURCE = (sequenceRecord, tryNameVariants) -> {
+-    throw new NoTalkbackSlimException("Either no reference SDF was specified, or this command does not currently support CRAM input");
++  static final CRAMReferenceSource NO_CRAM_REFERENCE_SOURCE = new CRAMReferenceSource() {
++    public byte[] getReferenceBases(htsjdk.samtools.SAMSequenceRecord record, boolean variants) {
++      throw new NoTalkbackSlimException("Either no reference SDF was specified, or this command does not currently support CRAM input");
++    }
++    public byte[] getReferenceBasesByRegion(htsjdk.samtools.SAMSequenceRecord record, int start, int length) {
++      return getReferenceBases(record, false);
++    }
+   };
+ 
+   private static final boolean LENIENT_SDF_MISMATCH = GlobalFlags.getBooleanValue(ToolsGlobalFlags.LENIENT_SDF_ID_MISMATCH_FLAG);
+--- a/src/test/java/com/rtg/reader/SequencesReaderReferenceSourceTest.java
++++ b/src/test/java/com/rtg/reader/SequencesReaderReferenceSourceTest.java
+@@ -50,6 +50,11 @@
+         final byte[] s1 = sr.getReferenceBases(new SAMSequenceRecord("seq1", 1), false);
+         assertNotNull(s1);
+         assertEquals("ACTG", new String(s1));
++        assertEquals("CT", new String(sr.getReferenceBasesByRegion(new SAMSequenceRecord("seq1", 4), 1, 2)));
++        assertEquals("TG", new String(sr.getReferenceBasesByRegion(new SAMSequenceRecord("seq1", 4), 2, Integer.MAX_VALUE)));
++        assertNull(sr.getReferenceBasesByRegion(new SAMSequenceRecord("missing", 4), 0, 1));
++        try { sr.getReferenceBasesByRegion(new SAMSequenceRecord("seq1", 4), -1, 2); fail("negative start accepted"); } catch (IllegalArgumentException expected) { }
++
+         final byte[] s2 = sr.getReferenceBases(new SAMSequenceRecord("seq2", 1), false);
+         assertNotNull(s2);
+         assertEquals("GTCA", new String(s2));
+--- a/src/test/java/com/rtg/report/RtgVelocityLogChuteTest.java
++++ b/src/test/java/com/rtg/report/RtgVelocityLogChuteTest.java
+@@ -29,7 +29,7 @@
+  */
+ package com.rtg.report;
+ 
+-import org.apache.velocity.runtime.log.LogChute;
++import com.rtg.report.RtgVelocityLogChute;
+ 
+ import com.rtg.util.diagnostic.Diagnostic;
+ import com.rtg.util.io.MemoryPrintStream;
+@@ -44,11 +44,11 @@
+     try (final MemoryPrintStream mps = new MemoryPrintStream()) {
+       Diagnostic.setLogStream(mps.printStream());
+       final RtgVelocityLogChute chute = new RtgVelocityLogChute();
+-      chute.log(LogChute.TRACE_ID, "not gonna log");
+-      chute.log(LogChute.DEBUG_ID, "totally logged");
+-      assertFalse(chute.isLevelEnabled(LogChute.TRACE_ID));
+-      assertTrue(chute.isLevelEnabled(LogChute.DEBUG_ID));
+-      assertTrue(chute.isLevelEnabled(LogChute.INFO_ID));
++      chute.log(RtgVelocityLogChute.TRACE_ID, "not gonna log");
++      chute.log(RtgVelocityLogChute.DEBUG_ID, "totally logged");
++      assertFalse(chute.isLevelEnabled(RtgVelocityLogChute.TRACE_ID));
++      assertTrue(chute.isLevelEnabled(RtgVelocityLogChute.DEBUG_ID));
++      assertTrue(chute.isLevelEnabled(RtgVelocityLogChute.INFO_ID));
+       assertFalse(mps.toString().contains("not gonna log"));
+       assertTrue(mps.toString().contains("totally logged"));
+     } finally {
+--- a/src/test/java/com/rtg/sam/SmartSamWriterTest.java
++++ b/src/test/java/com/rtg/sam/SmartSamWriterTest.java
+@@ -99,7 +99,7 @@
+     final StringBuilder sb = new StringBuilder();
+     sb.append(SamUtils.getHeaderAsString(records[0].getHeader()));
+     for (SAMRecord r : records) {
+-      sb.append(r.getSAMString());
++      sb.append(r.getSAMString()).append("\n");
+     }
+     assertEquals(sb.toString(), mps.toString());
+   }

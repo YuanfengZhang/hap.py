@@ -1,3 +1,4 @@
+#include <exception>
 // -*- mode: c++; indent-tabs-mode: nil; -*-
 //
 // Copyright (c) 2010-2015 Illumina, Inc.
@@ -117,8 +118,8 @@ int main(int argc, char *argv[])
                     ("blocksize", po::value<int>(), "Number of variants per block.")
                     ("min-var-distance", po::value<int>(), "Minimum distance between variants allowed to end up "
                             "in separate blocks")
-                    ("comparison-mode,M", po::value<std::string>()->default_value("allele"),
-                     "How to compare variants: allele (default) / distance / enumerate")
+                    ("comparison-mode,M", po::value<std::string>()->default_value("alleles"),
+                     "How to compare variants: alleles (default; alias allele) / distance / enumerate")
                     ("distance-maxdist", po::value<int>()->default_value(50),
                      "For distance comparison, this is the maximum distance between variants s.t. they get matched.")
                     ("enumerate-maxenum", po::value<int>()->default_value(1 << 16),
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
                 cmode = BlockAlleleCompare::DISTANCE;
                 cmode_params["max_distance"] = distance_max_dist;
             }
-            else if(comparison_mode == "alleles")
+            else if(comparison_mode == "alleles" || comparison_mode == "allele")
             {
                 cmode = BlockAlleleCompare::ALLELES;
             }
@@ -256,16 +257,16 @@ int main(int argc, char *argv[])
 
         FastaFile ref_fasta(ref.c_str());
         bcf_srs_t *reader = bcf_sr_init();
-        reader->collapse = COLLAPSE_NONE;
+        bcf_sr_set_opt(reader, BCF_SR_PAIR_LOGIC, BCF_SR_PAIR_EXACT);
 
         if(!chr.empty() || !only_regions.empty())
         {
-            reader->require_index = 1;
+            bcf_sr_set_opt(reader, BCF_SR_REQUIRE_IDX);
             reader->streaming = 0;
         }
         else
         {
-            reader->require_index = 0;
+            bcf_sr_set_opt(reader, BCF_SR_ALLOW_NO_IDX);
             reader->streaming = 1;
         }
 
@@ -282,23 +283,19 @@ int main(int argc, char *argv[])
             error("Failed to open or file not indexed: %s\n", input_vcf.c_str());
         }
 
+        bool seek_available = true;
         if(!chr.empty())
         {
-            int success = 0;
             if(start < 0)
             {
-                success = bcf_sr_seek(reader, chr.c_str(), 0);
+                seek_available = bcfhelpers::seek(reader, chr.c_str(), 0);
             }
             else
             {
-                success = bcf_sr_seek(reader, chr.c_str(), start);
+                seek_available = bcfhelpers::seek(reader, chr.c_str(), start);
 #ifdef DEBUG_SCMP
                 std::cerr << "starting at " << chr << ":" << start << "\n";
 #endif
-            }
-            if(success <= -2)
-            {
-                error("Cannot seek to %s:%i", chr.c_str(), start);
             }
         }
 
@@ -309,9 +306,11 @@ int main(int argc, char *argv[])
         // rename the samples in the output header
         bcfhelpers::p_bcf_hdr output_header(bcfhelpers::ph(bcf_hdr_init("w")));
         {
-            int len = 0;
-            char *hdr_text = bcf_hdr_fmt_text(hdr.get(), 0, &len);
-            if(!hdr_text)
+            kstring_t text = {0, 0, nullptr};
+            const int status = bcf_hdr_format(hdr.get(), 0, &text);
+            char *hdr_text = text.s;
+            const size_t len = text.l;
+            if(status < 0 || !hdr_text)
             {
                 error("Failed to process input VCF header.");
             }
@@ -355,6 +354,7 @@ int main(int argc, char *argv[])
         int64_t rcount = 0;
         std::string current_chr = "";
         int vars_in_block = 0;
+        int64_t distance_block_end = -1;
 
         /*
          * we keep a list of jobs as futures which get processed by a pool of
@@ -377,165 +377,242 @@ int main(int argc, char *argv[])
         bool all_blocks_added = false;
 
         std::vector<std::thread> workers;
+        std::exception_ptr worker_error;
 
         auto worker = [&blocks,
                 &blocks_mutex,
                 &processed_blocks,
                 &processed_blocks_mutex,
-                &all_blocks_added]
+                &all_blocks_added,
+                &worker_error]
         {
-            bool work_left = true;
-            while(work_left)
+            try
             {
-                std::unique_ptr<BlockAlleleCompare> current_block;
-#ifdef DEBUG_SCMP_THREADING
-                std::cerr << "Worker " << std::thread::id() << " waiting." << std::endl;
-#endif
+                bool work_left = true;
+                while(work_left)
                 {
-                    std::lock_guard<std::mutex> lk(blocks_mutex);
-                    /* std::unique_lock<std::mutex> lk(blocks_mutex); */
-                    /* lk.wait([&blocks]() { !blocks.empty(); }); */
-                    if(!blocks.empty())
-                    {
-                        current_block = std::move(blocks.front());
-                        blocks.pop();
-                    }
-                }
-                if(current_block)
-                {
+                    std::unique_ptr<BlockAlleleCompare> current_block;
 #ifdef DEBUG_SCMP_THREADING
-                    std::cerr << "Worker " << std::thread::id() << " has a job." << std::endl;
-#endif
-                    current_block->run();
-#ifdef DEBUG_SCMP_THREADING
-                    std::cerr << "Worker " << std::thread::id() << " finished a job." << std::endl;
+                    std::cerr << "Worker " << std::thread::id() << " waiting." << std::endl;
 #endif
                     {
-                        std::lock_guard<std::mutex> lock(processed_blocks_mutex);
-                        processed_blocks.emplace_back(std::move(current_block));
+                        std::lock_guard<std::mutex> lk(blocks_mutex);
+                        /* std::unique_lock<std::mutex> lk(blocks_mutex); */
+                        /* lk.wait([&blocks]() { !blocks.empty(); }); */
+                        if(!blocks.empty())
+                        {
+                            current_block = std::move(blocks.front());
+                            blocks.pop();
+                        }
+                    }
+                    if(current_block)
+                    {
 #ifdef DEBUG_SCMP_THREADING
-                        std::cerr << "Worker " << std::thread::id() << " done." << std::endl;
+                        std::cerr << "Worker " << std::thread::id() << " has a job." << std::endl;
 #endif
+                        current_block->run();
+#ifdef DEBUG_SCMP_THREADING
+                        std::cerr << "Worker " << std::thread::id() << " finished a job." << std::endl;
+#endif
+                        {
+                            std::lock_guard<std::mutex> lock(processed_blocks_mutex);
+                            processed_blocks.emplace_back(std::move(current_block));
+#ifdef DEBUG_SCMP_THREADING
+                            std::cerr << "Worker " << std::thread::id() << " done." << std::endl;
+#endif
+                        }
+                    }
+                    {
+                        std::lock_guard<std::mutex> lock(blocks_mutex);
+                        work_left = !all_blocks_added || !blocks.empty();
                     }
                 }
-                work_left = !all_blocks_added || !blocks.empty();
+            }
+            catch(...)
+            {
+                std::lock_guard<std::mutex> lock(blocks_mutex);
+                if(!worker_error)
+                {
+                    worker_error = std::current_exception();
+                }
             }
         };
 
-        for(int j = 0; j < std::max(1, threads); ++j)
+        try
         {
-            workers.emplace_back(worker);
-        }
-
-        std::unique_ptr<BlockAlleleCompare> p_bac(new BlockAlleleCompare(hdr, ref_fasta, qq_field));
-        p_bac->setComparisonMode(cmode);
-        p_bac->setComparisonParameters(cmode_params);
-
-        int nl = 1;
-        int previous_pos = -1;
-        auto t0 = CPUClock::now();
-        while(nl)
-        {
-            nl = bcf_sr_next_line(reader);
-            if(nl <= 0)
+            for(int j = 0; j < std::max(1, threads); ++j)
             {
-                break;
-            }
-            if(!bcf_sr_has_line(reader, 0))
-            {
-                continue;
-            }
-            bcf1_t *line = reader->readers[0].buffer[0];
-
-            if(rlimit != -1)
-            {
-                if(rcount >= rlimit)
-                {
-                    break;
-                }
-            }
-            const std::string vchr = bcfhelpers::getChrom(hdr.get(), line);
-            if(end != -1 && ((!current_chr.empty() && vchr != current_chr) || line->pos > end))
-            {
-                break;
+                workers.emplace_back(worker);
             }
 
-            if(!current_chr.empty() && vchr != current_chr)
-            {
-                // reset bs on chr switch
-                previous_pos = -1;
-                if(vars_in_block > 0)
-                {
-                    // make sure we create a new block
-                    vars_in_block = blocksize + 1;
-                }
-            }
-            current_chr = vchr;
+            std::unique_ptr<BlockAlleleCompare> p_bac(new BlockAlleleCompare(hdr, ref_fasta, qq_field));
+            p_bac->setComparisonMode(cmode);
+            p_bac->setComparisonParameters(cmode_params);
 
-            if(apply_filters)
-            {
-                bcf_unpack(line, BCF_UN_FLT);
-
-                bool fail = false;
-                for(int j = 0; j < line->d.n_flt; ++j)
-                {
-                    std::string filter = "PASS";
-                    int k = line->d.flt[j];
-
-                    if(k >= 0)
-                    {
-                        filter = bcf_hdr_int2id(hdr.get(), BCF_DT_ID, line->d.flt[j]);
-                    }
-                    if(filter != "PASS")
-                    {
-                        fail = true;
-                        break;
-                    }
-                }
-
-                // skip failing
-                if(fail)
-                {
-                    continue;
-                }
-            }
-
-            const int dist_to_previous = (previous_pos < 0) ? 0 : line->pos - previous_pos;
-            previous_pos = line->pos;
-
-            if(vars_in_block > blocksize || dist_to_previous > min_var_distance)
+            int nl = 1;
+            int previous_pos = -1;
+            auto t0 = CPUClock::now();
+            while(nl)
             {
                 {
                     std::lock_guard<std::mutex> lock(blocks_mutex);
-                    blocks.emplace(std::move(p_bac));
+                    if(worker_error)
+                    {
+                        std::rethrow_exception(worker_error);
+                    }
                 }
-                p_bac = std::move(
-                        std::unique_ptr<BlockAlleleCompare>(new BlockAlleleCompare(hdr, ref_fasta, qq_field)));
-                p_bac->setComparisonMode(cmode);
-                p_bac->setComparisonParameters(cmode_params);
-                vars_in_block = 0;
-                previous_pos = -1;
+                nl = seek_available ? bcf_sr_next_line(reader) : 0;
+                if(nl <= 0)
+                {
+                    break;
+                }
+                if(!bcf_sr_has_line(reader, 0))
+                {
+                    continue;
+                }
+                bcf1_t *line = reader->readers[0].buffer[0];
+
+                if(rlimit != -1)
+                {
+                    if(rcount >= rlimit)
+                    {
+                        break;
+                    }
+                }
+                const std::string vchr = bcfhelpers::getChrom(hdr.get(), line);
+                if(end != -1 && ((!current_chr.empty() && vchr != current_chr) || line->pos > end))
+                {
+                    break;
+                }
+
+                if(apply_filters)
+                {
+                    bcf_unpack(line, BCF_UN_FLT);
+
+                    bool fail = false;
+                    for(int j = 0; j < line->d.n_flt; ++j)
+                    {
+                        std::string filter = "PASS";
+                        int k = line->d.flt[j];
+
+                        if(k >= 0)
+                        {
+                            filter = bcf_hdr_int2id(hdr.get(), BCF_DT_ID, line->d.flt[j]);
+                        }
+                        if(filter != "PASS")
+                        {
+                            fail = true;
+                            break;
+                        }
+                    }
+
+                    // skip failing
+                    if(fail)
+                    {
+                        continue;
+                    }
+                }
+
+                const bool chromosome_changed = !current_chr.empty() && vchr != current_chr;
+                if(chromosome_changed)
+                {
+                    // reset bs on chr switch
+                    previous_pos = -1;
+                    if(vars_in_block > 0)
+                    {
+                        // make sure we create a new block
+                        vars_in_block = blocksize + 1;
+                    }
+                }
+                current_chr = vchr;
+
+                const int dist_to_previous = (previous_pos < 0) ? 0 : line->pos - previous_pos;
+                previous_pos = line->pos;
+
+                const bool distance_mode = cmode == BlockAlleleCompare::DISTANCE;
+                const int64_t match_distance = distance_mode ? cmode_params["max_distance"].asInt() : 0;
+                const bool distance_boundary = distance_block_end >= 0 && line->pos - 1 > distance_block_end
+                                               && line->pos - 1 - distance_block_end > match_distance;
+                if(distance_mode ? (chromosome_changed || (distance_boundary
+                                    && (vars_in_block > blocksize || dist_to_previous > min_var_distance)))
+                                 : (vars_in_block > blocksize || dist_to_previous > min_var_distance))
+                {
+                    {
+                        std::lock_guard<std::mutex> lock(blocks_mutex);
+                        if(worker_error)
+                        {
+                            std::rethrow_exception(worker_error);
+                        }
+                        blocks.emplace(std::move(p_bac));
+                    }
+                    p_bac = std::move(
+                            std::unique_ptr<BlockAlleleCompare>(new BlockAlleleCompare(hdr, ref_fasta, qq_field)));
+                    p_bac->setComparisonMode(cmode);
+                    p_bac->setComparisonParameters(cmode_params);
+                    vars_in_block = 0;
+                    distance_block_end = -1;
+                    previous_pos = -1;
+                }
+
+                if(distance_mode)
+                {
+                    // Dense connected components must fail explicitly, never split a possible match.
+                    if(vars_in_block >= 1000000)
+                    {
+                        error("Distance matching component exceeds 1000000 records at %s:%lld",
+                              vchr.c_str(), static_cast<long long>(line->pos + 1));
+                    }
+                    bcf_unpack(line, BCF_UN_STR);
+                    for(int allele = 0; allele < line->n_allele; ++allele)
+                    {
+                        const int64_t length = std::max<int64_t>(1, strlen(line->d.allele[allele]));
+                        distance_block_end = std::max(distance_block_end, line->pos + length - 1);
+                    }
+                }
+                p_bac->add(line);
+                ++vars_in_block;
+
+                if(message > 0 && (rcount % message) == 0)
+                {
+                    auto t1 = CPUClock::now();
+                    typedef std::chrono::duration<double, typename CPUClock::period> Cycle;
+                    std::cout << stringutil::formatPos(vchr.c_str(), line->pos) << " cycles/record: " <<
+                              (Cycle(t1 - t0).count() / rcount) << "\n";
+                }
+                // count variants here
+                ++rcount;
             }
 
-            p_bac->add(line);
-            ++vars_in_block;
-
-            if(message > 0 && (rcount % message) == 0)
             {
-                auto t1 = CPUClock::now();
-                typedef std::chrono::duration<double, typename CPUClock::period> Cycle;
-                std::cout << stringutil::formatPos(vchr.c_str(), line->pos) << " cycles/record: " <<
-                          (Cycle(t1 - t0).count() / rcount) << "\n";
+                std::lock_guard<std::mutex> lock(blocks_mutex);
+                if(worker_error)
+                {
+                    std::rethrow_exception(worker_error);
+                }
+                blocks.emplace(std::move(p_bac));
+                all_blocks_added = true;
             }
-            // count variants here
-            ++rcount;
+
+        }
+        catch(...)
+        {
+            {
+                std::lock_guard<std::mutex> lock(blocks_mutex);
+                all_blocks_added = true;
+            }
+            for(auto &t : workers)
+            {
+                t.join();
+            }
+            hts_close(writer);
+            bcf_sr_destroy(reader);
+            if(worker_error)
+            {
+                std::rethrow_exception(worker_error);
+            }
+            throw;
         }
 
-        {
-            std::lock_guard<std::mutex> lock(blocks_mutex);
-            blocks.emplace(std::move(p_bac));
-            all_blocks_added = true;
-        }
 
         if(message > 0)
         {
@@ -545,6 +622,13 @@ int main(int argc, char *argv[])
         for(auto &t : workers)
         {
             t.join();
+        }
+
+        if(worker_error)
+        {
+            hts_close(writer);
+            bcf_sr_destroy(reader);
+            std::rethrow_exception(worker_error);
         }
 
         // make sure we write in the correct order

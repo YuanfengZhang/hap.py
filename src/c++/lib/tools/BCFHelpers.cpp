@@ -38,8 +38,11 @@
 #include "Error.hh"
 
 #include <cstdio>
+#include <cmath>
+#include <algorithm>
 #include <sstream>
 #include <htslib/vcf.h>
+#include <htslib/faidx.h>
 #include <memory>
 #include <limits>
 #include <set>
@@ -66,268 +69,154 @@ namespace bcfhelpers
                                        std::vector<target_type_t> & dest) const
             {
                 dest.clear();
-                int i;
-                int tag_id = bcf_hdr_id2int(hdr, BCF_DT_ID, tag);
-
-                if ( !bcf_hdr_idinfo_exists(hdr,BCF_HL_FMT,tag_id) )
+                const int samples = bcf_hdr_nsamples(hdr);
+                if (isample < 0 || isample >= samples) return;
+                const int id = bcf_hdr_id2int(hdr, BCF_DT_ID, tag);
+                if (!bcf_hdr_idinfo_exists(hdr, BCF_HL_FMT, id)) return;
+                const int type = bcf_hdr_id2type(hdr, BCF_HL_FMT, id);
+                int capacity = 0;
+                if (type == BCF_HT_INT)
                 {
-                    return;
-                }
-
-                int nsmpl = bcf_hdr_nsamples(hdr);
-                if (isample >= nsmpl)
-                {
-                    return;
-                }
-
-                bcf_unpack(line, BCF_UN_FMT);
-
-                for (i = 0; i < line->n_fmt; i++)
-                {
-                    if ( line->d.fmt[i].id == tag_id )
+                    int32_t *raw = nullptr;
+                    const int count = bcf_get_format_int32(hdr, line, tag, &raw, &capacity);
+                    std::unique_ptr<int32_t, decltype(&free)> values(raw, &free);
+                    if (count <= 0) return;
+                    const int stride = count / samples;
+                    for (int i = 0; i < stride; ++i)
                     {
-                        break;
+                        const int32_t value = raw[isample * stride + i];
+                        if (value == bcf_int32_vector_end) break;
+                        dest.push_back(value == bcf_int32_missing ? target_type_t(0) : target_type_t(value));
                     }
                 }
-
-                if ( i == line->n_fmt )
+                else if (type == BCF_HT_REAL)
                 {
-                    return;
-                }
-
-                bcf_fmt_t *fmt = &line->d.fmt[i];
-                int type = fmt->type;
-                dest.resize((unsigned long) fmt->n);
-
-                for (i = 0; i < fmt->n; ++i)
-                {
-                    if ( type == BCF_BT_FLOAT )
+                    float *raw = nullptr;
+                    const int count = bcf_get_format_float(hdr, line, tag, &raw, &capacity);
+                    std::unique_ptr<float, decltype(&free)> values(raw, &free);
+                    if (count <= 0) return;
+                    const int stride = count / samples;
+                    for (int i = 0; i < stride; ++i)
                     {
-                        static const auto make_missing_float = []() -> float
-                        {
-                            float f;
-                            int32_t _mfloat = 0x7F800001;
-                            memcpy(&f, &_mfloat, 4);
-                            return f;
-                        };
-                        static const float bcf_missing_float = make_missing_float();
-                        float res = ((float*)(fmt->p + isample*fmt->size))[i];
-                        if(res != bcf_missing_float)
-                        {
-                            dest[i] = target_type_t(res);
-                        }
-                    }
-                    else if (type == BCF_BT_INT8)
-                    {
-                        int8_t r = ((int8_t*)(fmt->p + isample*fmt->size ))[i];
-                        if(r == bcf_int8_vector_end)
-                        {
-                            break;
-                        }
-                        if(r != bcf_int8_missing)
-                        {
-                            dest[i] = target_type_t(r);
-                        }
-                    }
-                    else if (type == BCF_BT_INT16)
-                    {
-                        int16_t r = (((int16_t*)(fmt->p)) + isample*fmt->size)[i];
-                        if(r == bcf_int16_vector_end)
-                        {
-                            break;
-                        }
-                        if(r != bcf_int16_missing)
-                        {
-                            dest[i] = target_type_t(r);
-                        }
-                    }
-                    else if (type == BCF_BT_INT32)
-                    {
-                        int32_t r = ((int32_t*)(fmt->p + isample*fmt->size))[i];
-                        if(r == bcf_int32_vector_end)
-                        {
-                            break;
-                        }
-                        if(r != bcf_int32_missing)
-                        {
-                            dest[i] = target_type_t(r);
-                        }
-                    }
-                    else
-                    {
-                        std::cerr << "[W] string format field ignored when looking for numeric formats!" << "\n";
-                        dest[i] = -1;
+                        const float value = raw[isample * stride + i];
+                        if (bcf_float_is_vector_end(value)) break;
+                        if (bcf_float_is_missing(value))
+                            dest.push_back(std::numeric_limits<target_type_t>::is_integer
+                                           ? target_type_t(0)
+                                           : std::numeric_limits<target_type_t>::quiet_NaN());
+                        else if (std::numeric_limits<target_type_t>::is_integer &&
+                                 (!std::isfinite(value) || value < std::numeric_limits<target_type_t>::lowest() ||
+                                  static_cast<double>(value) > std::numeric_limits<target_type_t>::max()))
+                            throw importexception("Non-finite or out-of-range numeric FORMAT value");
+                        else dest.push_back(target_type_t(value));
                     }
                 }
             }
         };
 
-        template <typename type_t>
-        struct bcf_get_gts {
-
-            bcf_get_gts() {}
-
-            /**
-             * @brief Extract GT from Format field
-             *
-             */
-            void operator() (bcf_fmt_t* gt, int i, int* igt, bool & phased) const
+        template<typename T>
+        std::vector<T> numericInfo(bcf_hdr_t *header, bcf1_t *line, const char *field)
+        {
+            std::vector<T> result;
+            const int id = bcf_hdr_id2int(header, BCF_DT_ID, field);
+            if (!bcf_hdr_idinfo_exists(header, BCF_HL_INFO, id)) return result;
+            const int type = bcf_hdr_id2type(header, BCF_HL_INFO, id);
+            int capacity = 0;
+            if (type == BCF_HT_INT)
             {
-                phased = false;
-                type_t *p = (type_t*) (gt->p + i*gt->size);
-                int ial;
-                for (ial=0; ial < MAX_GT; ial++)
+                int32_t *raw = nullptr;
+                const int count = bcf_get_info_int32(header, line, field, &raw, &capacity);
+                std::unique_ptr<int32_t, decltype(&free)> values(raw, &free);
+                for (int i = 0; i < count; ++i)
                 {
-                    igt[ial] = -1;
-                }
-                for (ial=0; ial < gt->n; ial++)
-                {
-                    if ( p[ial]==vector_end ) break; /* smaller ploidy */
-                    if ( !(p[ial]>>1) || p[ial] == missing ) continue; /* missing allele */
-                    int al = (p[ial]>>1)-1;
-                    igt[ial] = al;
-                    phased = phased || ((p[ial] & 1) != 0);
+                    if (raw[i] == bcf_int32_vector_end) break;
+                    result.push_back(static_cast<T>(raw[i]));
                 }
             }
-
-            static const type_t missing;
-            static const type_t vector_end;
-        };
-        template<> const int8_t bcf_get_gts<int8_t>::missing (bcf_int8_missing);
-        template<> const int8_t bcf_get_gts<int8_t>::vector_end (bcf_int8_vector_end);
-        template<> const int16_t bcf_get_gts<int16_t>::missing (bcf_int16_missing);
-        template<> const int16_t bcf_get_gts<int16_t>::vector_end (bcf_int16_vector_end);
-        template<> const int32_t bcf_get_gts<int32_t>::missing (bcf_int32_missing);
-        template<> const int32_t bcf_get_gts<int32_t>::vector_end (bcf_int32_vector_end);
-
-
-        template<typename type_t>
-        struct bcf_get_info
-        {
-            bcf_get_info() {}
-            type_t operator()(bcf_info_t * field, int which = 0) const;
-        };
-
-        template<>
-        int bcf_get_info<int>::operator()(bcf_info_t * field, int which) const
-        {
-            if(field->type != BCF_BT_CHAR && field->len <= which)
+            else if (type == BCF_HT_REAL)
             {
-                error("Cannot extract int from non-scalar INFO field (len = %i, requested: %i).",
-                      field->len, which);
-            }
-            switch(field->type)
-            {
-                case BCF_BT_NULL:
-                    return 0;
-                case BCF_BT_INT8:
-                    return (int) *(((int8_t *)field->vptr) + which );
-                case BCF_BT_INT16:
-                    return (int) *(((int16_t *)field->vptr) + which );
-                case BCF_BT_INT32:
-                    return (int) *(((int32_t *)field->vptr) + which );
-                case BCF_BT_FLOAT:
-                    return (int) *(((float*)field->vptr) + which );
-                case BCF_BT_CHAR:
-                    if(which > 0)
-                    {
-                        error("Cannot extract int %i from string INFO field", which);
-                    }
-                    return atoi((const char *)field->vptr);
-                default:
-                    break;
-            }
-            return -1;
-        }
-
-        template<>
-        float bcf_get_info<float>::operator()(bcf_info_t * field, int which) const
-        {
-            switch(field->type)
-            {
-                case BCF_BT_NULL:
-                    return std::numeric_limits<float>::quiet_NaN();
-                case BCF_BT_INT8:
-                case BCF_BT_INT16:
-                case BCF_BT_INT32:
+                const bcf_info_t *info = bcf_get_info(header, line, field);
+                if (info && (info->type == BCF_BT_INT8 || info->type == BCF_BT_INT16 ||
+                             info->type == BCF_BT_INT32))
                 {
-                    const bcf_get_info<int> gi;
-                    return (float)gi(field, which);
+                    // A float declaration may use integer BCF storage; convert values through the public decoder, not by reinterpreting bits.
+                    const int64_t missing = info->type == BCF_BT_INT8 ? bcf_int8_missing :
+                                            info->type == BCF_BT_INT16 ? bcf_int16_missing : bcf_int32_missing;
+                    const int64_t end = info->type == BCF_BT_INT8 ? bcf_int8_vector_end :
+                                        info->type == BCF_BT_INT16 ? bcf_int16_vector_end : bcf_int32_vector_end;
+                    uint8_t *cursor = info->vptr;
+                    for (int i = 0; i < info->len; ++i)
+                    {
+                        const int64_t value = bcf_dec_int1(cursor, info->type, &cursor);
+                        if (value == end) break;
+                        if (value == missing)
+                            result.push_back(std::numeric_limits<T>::is_integer ?
+                                             static_cast<T>(bcf_int32_missing) : std::numeric_limits<T>::quiet_NaN());
+                        else result.push_back(static_cast<T>(value));
+                    }
+                    return result;
                 }
-                case BCF_BT_FLOAT:
-                    if(field->len <= which)
-                    {
-                        error("Cannot extract int from non-scalar INFO field (len = %i, requested: %i).",
-                              field->len, which);
-
-                    }
-                    return *(((float*)field->vptr) + which );
-                case BCF_BT_CHAR:
-                    if(which > 0)
-                    {
-                        error("Cannot extract int %i from string INFO field", which);
-                    }
-                    return (float) atof((const char *)field->vptr);
-                default:break;
+                float *raw = nullptr;
+                const int count = bcf_get_info_float(header, line, field, &raw, &capacity);
+                std::unique_ptr<float, decltype(&free)> values(raw, &free);
+                for (int i = 0; i < count; ++i)
+                {
+                    if (bcf_float_is_vector_end(raw[i])) break;
+                    if (std::numeric_limits<T>::is_integer &&
+                        (!std::isfinite(raw[i]) || raw[i] < std::numeric_limits<T>::lowest() ||
+                         static_cast<double>(raw[i]) > std::numeric_limits<T>::max()))
+                        throw importexception(std::string("Non-finite or out-of-range numeric INFO value: ") + field + " at " + std::to_string(line->pos + 1) + " value " + std::to_string(raw[i]));
+                    result.push_back(static_cast<T>(raw[i]));
+                }
             }
-            return std::numeric_limits<float>::quiet_NaN();
-        }
-
-        template<>
-        std::string bcf_get_info<std::string>::operator()(bcf_info_t * field, int) const
-        {
-            char num[256];
-            switch(field->type)
+            else if (type == BCF_HT_STR)
             {
-                case BCF_BT_NULL:
-                    return std::string("NULL");
-                case BCF_BT_INT8:
-                case BCF_BT_INT16:
-                case BCF_BT_INT32:
-                    snprintf(num, 256, "%i", field->v1.i);
-                    return std::string(num);
-                case BCF_BT_FLOAT:
-                    snprintf(num, 256, "%g", field->v1.f);
-                    return std::string(num);
-                case BCF_BT_CHAR:
-                    if(field->vptr && field->len > 0)
-                    {
-                        return std::string((const char *)field->vptr, (unsigned long) field->len);
-                    }
-                    break;
-                default:break;
+                char *raw = nullptr;
+                const int count = bcf_get_info_string(header, line, field, &raw, &capacity);
+                std::unique_ptr<char, decltype(&free)> value(raw, &free);
+                if (count > 0)
+                {
+                    const double number = std::strtod(raw, nullptr);
+                    if (std::numeric_limits<T>::is_integer &&
+                        (!std::isfinite(number) || number < std::numeric_limits<T>::lowest() ||
+                         number > std::numeric_limits<T>::max()))
+                        throw importexception("Out-of-range string INFO value");
+                    result.push_back(static_cast<T>(number));
+                }
             }
-            return std::string();
+            return result;
         }
-
     }
 
-    void bcfHeaderHG19(bcf_hdr_t * header)
+    bool seek(bcf_srs_t *readers, const char *chromosome, int64_t position)
     {
-        bcf_hdr_append(header, "##reference=hg19");
-        bcf_hdr_append(header, "##contig=<ID=chr1,length=249250621>");
-        bcf_hdr_append(header, "##contig=<ID=chr2,length=243199373>");
-        bcf_hdr_append(header, "##contig=<ID=chr3,length=198022430>");
-        bcf_hdr_append(header, "##contig=<ID=chr4,length=191154276>");
-        bcf_hdr_append(header, "##contig=<ID=chr5,length=180915260>");
-        bcf_hdr_append(header, "##contig=<ID=chr6,length=171115067>");
-        bcf_hdr_append(header, "##contig=<ID=chr7,length=159138663>");
-        bcf_hdr_append(header, "##contig=<ID=chr8,length=146364022>");
-        bcf_hdr_append(header, "##contig=<ID=chr9,length=141213431>");
-        bcf_hdr_append(header, "##contig=<ID=chr10,length=135534747>");
-        bcf_hdr_append(header, "##contig=<ID=chr11,length=135006516>");
-        bcf_hdr_append(header, "##contig=<ID=chr12,length=133851895>");
-        bcf_hdr_append(header, "##contig=<ID=chr13,length=115169878>");
-        bcf_hdr_append(header, "##contig=<ID=chr14,length=107349540>");
-        bcf_hdr_append(header, "##contig=<ID=chr15,length=102531392>");
-        bcf_hdr_append(header, "##contig=<ID=chr16,length=90354753>");
-        bcf_hdr_append(header, "##contig=<ID=chr17,length=81195210>");
-        bcf_hdr_append(header, "##contig=<ID=chr18,length=78077248>");
-        bcf_hdr_append(header, "##contig=<ID=chr19,length=59128983>");
-        bcf_hdr_append(header, "##contig=<ID=chr20,length=63025520>");
-        bcf_hdr_append(header, "##contig=<ID=chr21,length=48129895>");
-        bcf_hdr_append(header, "##contig=<ID=chr22,length=51304566>");
-        bcf_hdr_append(header, "##contig=<ID=chrX,length=155270560>");
+        readers->errnum = static_cast<bcf_sr_error>(0);
+        // In 1.24 _reader_seek returns zero on success, despite the header comment.
+        // The indexed region dictionary, not just VCF header declarations, determines presence.
+        if (chromosome && readers->regions &&
+            bcf_sr_regions_seek(readers->regions, chromosome) < 0)
+            return false;
+        bcf_sr_seek(readers, chromosome, position < 0 ? 0 : position);
+        if (readers->errnum)
+            throw importexception("Cannot seek VCF/BCF: " + std::string(bcf_sr_strerror(readers->errnum)));
+        return true;
+    }
+
+    void bcfHeaderFromReference(bcf_hdr_t * header, const char * reference)
+    {
+        if (!reference || !*reference)
+            throw importexception("A readable FASTA reference is required for the output sequence dictionary");
+        std::unique_ptr<faidx_t, decltype(&fai_destroy)> index(fai_load(reference), &fai_destroy);
+        if (!index) throw importexception("Cannot load FASTA reference/index: " + std::string(reference));
+        bcf_hdr_append(header, ("##reference=" + std::string(reference)).c_str());
+        for (int i = 0; i < faidx_nseq(index.get()); ++i)
+        {
+            const char *name = faidx_iseq(index.get(), i);
+            const auto length = faidx_seq_len64(index.get(), name);
+            const std::string line = "##contig=<ID=" + std::string(name) + ",length=" + std::to_string(length) + ">";
+            if (bcf_hdr_append(header, line.c_str()) != 0)
+                throw importexception("Cannot append reference contig: " + std::string(name));
+        }
         bcf_hdr_append(header, "##INFO=<ID=END,Number=.,Type=Integer,Description=\"SV end position\">");
         bcf_hdr_append(header, "##INFO=<ID=IMPORT_FAIL,Number=.,Type=Flag,Description=\"Flag to identify variants that could not be imported.\">");
         bcf_hdr_append(header, "##FORMAT=<ID=AGT,Number=1,Type=String,Description=\"Genotypes at ambiguous locations\">");
@@ -372,83 +261,53 @@ namespace bcfhelpers
      *
      * @param result the default to return if the field is not present
      */
-    std::string getInfoString(bcf_hdr_t * header, bcf1_t * line, const char * field, const char * def_result)
+    std::string getInfoString(bcf_hdr_t *header, bcf1_t *line, const char *field, const char *def_result)
     {
-        std::string result = def_result;
-        bcf_info_t * info_ptr  = bcf_get_info(header, line, field);
-        if(info_ptr)
+        const int id = bcf_hdr_id2int(header, BCF_DT_ID, field);
+        if (!bcf_hdr_idinfo_exists(header, BCF_HL_INFO, id)) return def_result;
+        const int type = bcf_hdr_id2type(header, BCF_HL_INFO, id);
+        if (type == BCF_HT_FLAG)
+            return getInfoFlag(header, line, field) ? "NULL" : def_result;
+        if (type == BCF_HT_INT)
         {
-            static const bcfhelpers::_impl::bcf_get_info<std::string> i;
-            result = i(info_ptr);
+            const auto values = getInfoInts(header, line, field);
+            return values.empty() ? def_result : std::to_string(values.front());
         }
-        return result;
+        if (type == BCF_HT_REAL)
+        {
+            const auto values = getInfoFloats(header, line, field);
+            if (values.empty()) return def_result;
+            char text[256];
+            snprintf(text, sizeof(text), "%g", values.front());
+            return text;
+        }
+        char *raw = nullptr;
+        int capacity = 0;
+        const int count = bcf_get_info_string(header, line, field, &raw, &capacity);
+        std::unique_ptr<char, decltype(&free)> value(raw, &free);
+        return count >= 0 ? std::string(raw, count) : std::string(def_result);
     }
 
-    /**
-     * @brief Retrieve an info field as an integer
-     *
-     * @param result the default to return if the field is not present
-     */
-    int getInfoInt(bcf_hdr_t * header, bcf1_t * line, const char * field, int result)
+    int getInfoInt(bcf_hdr_t *header, bcf1_t *line, const char *field, int result)
     {
-        bcf_unpack(line, BCF_UN_INFO);
-        bcf_info_t * info_ptr  = bcf_get_info(header, line, field);
-        if(info_ptr)
-        {
-            static const bcfhelpers::_impl::bcf_get_info<int> i;
-            result = i(info_ptr);
-        }
-        return result;
+        const auto values = getInfoInts(header, line, field);
+        return values.empty() ? result : values.front();
     }
 
-    std::vector<int> getInfoInts(bcf_hdr_t * header, bcf1_t * line, const char * field)
+    std::vector<int> getInfoInts(bcf_hdr_t *header, bcf1_t *line, const char *field)
     {
-        std::vector<int> result;
-        bcf_unpack(line, BCF_UN_INFO);
-        bcf_info_t * info_ptr  = bcf_get_info(header, line, field);
-        if(info_ptr)
-        {
-            static const bcfhelpers::_impl::bcf_get_info<int> i;
-            for(int j = 0; j < info_ptr->len; ++j)
-            {
-                result.push_back(i(info_ptr, j));
-            }
-        }
-        return result;
+        return _impl::numericInfo<int>(header, line, field);
     }
 
-    /**
-     * @brief Retrieve an info field as a double
-     *
-     * @return the value or NaN
-     */
-    float getInfoFloat(bcf_hdr_t * header, bcf1_t * line, const char * field)
+    float getInfoFloat(bcf_hdr_t *header, bcf1_t *line, const char *field)
     {
-        float result = std::numeric_limits<float>::quiet_NaN();
-        bcf_unpack(line, BCF_UN_INFO);
-        bcf_info_t * info_ptr  = bcf_get_info(header, line, field);
-        if(info_ptr)
-        {
-            static const bcfhelpers::_impl::bcf_get_info<float> i;
-            result = i(info_ptr);
-        }
-        return result;
+        const auto values = getInfoFloats(header, line, field);
+        return values.empty() ? std::numeric_limits<float>::quiet_NaN() : values.front();
     }
 
-    std::vector<float> getInfoFloats(bcf_hdr_t * header, bcf1_t * line, const char * field)
+    std::vector<float> getInfoFloats(bcf_hdr_t *header, bcf1_t *line, const char *field)
     {
-        std::vector<float> result;
-        bcf_unpack(line, BCF_UN_INFO);
-        bcf_info_t * info_ptr  = bcf_get_info(header, line, field);
-        if(info_ptr)
-        {
-            static const bcfhelpers::_impl::bcf_get_info<float> i;
-            for(int j = 0; j < info_ptr->len; ++j)
-            {
-                result.push_back(i(info_ptr, j));
-            }
-        }
-        return result;
+        return _impl::numericInfo<float>(header, line, field);
     }
 
     /**
@@ -467,35 +326,31 @@ namespace bcfhelpers
      */
     void getGT(bcf_hdr_t * header, bcf1_t * line, int isample, int * gt, int & ngt, bool & phased)
     {
-        bcf_unpack(line, BCF_UN_FMT);
-        bcf_fmt_t * fmt_ptr = bcf_get_fmt(header, line, "GT");
-        if (fmt_ptr)
+        ngt = 0;
+        phased = false;
+        std::fill(gt, gt + MAX_GT, -1);
+        const int samples = bcf_hdr_nsamples(header);
+        if (isample < 0 || isample >= samples) return;
+        int32_t *raw = nullptr;
+        int capacity = 0;
+        const int count = bcf_get_genotypes(header, line, &raw, &capacity);
+        std::unique_ptr<int32_t, decltype(&free)> values(raw, &free);
+        if (count <= 0) return;
+        const int stride = count / samples;
+        const int32_t *sample = raw + isample * stride;
+        while (ngt < stride && sample[ngt] != bcf_int32_vector_end) ++ngt;
+        if (ngt > MAX_GT)
         {
-            ngt = fmt_ptr->n;
-            if(ngt > MAX_GT)
-            {
-                std::cerr << "[W] Found a variant with more " << ngt << " > " << MAX_GT << " (max) alt alleles. These become no-calls." << "\n";
-                for (int i = 0; i < MAX_GT; ++i)
-                {
-                    gt[i] = -1;
-                }
-                phased = false;
-                return;
-            }
-
-            // check if all alleles are populated
-            switch (fmt_ptr->type) {
-                case BCF_BT_INT8:  {static const bcfhelpers::_impl::bcf_get_gts<int8_t> b; b(fmt_ptr, isample, gt, phased);} break;
-                case BCF_BT_INT16: {static const bcfhelpers::_impl::bcf_get_gts<int16_t> b; b(fmt_ptr, isample, gt, phased);} break;
-                case BCF_BT_INT32: {static const bcfhelpers::_impl::bcf_get_gts<int32_t> b; b(fmt_ptr, isample, gt, phased);} break;
-                default: error("Unsupported GT type: %d at %s:%d\n", fmt_ptr->type,
-                               header->id[BCF_DT_CTG][line->rid].key, line->pos+1);  break;
-            }
+            throw importexception("GT ploidy exceeds supported capacity at " + std::string(bcf_hdr_id2name(header, line->rid)) + ":" + std::to_string(line->pos + 1));
         }
-        else
+        for (int i = 0; i < ngt; ++i)
         {
-            ngt = 0;
-            phased = false;
+            if (bcf_gt_is_missing(sample[i])) continue;
+            const int allele = bcf_gt_allele(sample[i]);
+            if (allele < 0 || allele >= line->n_allele)
+                throw importexception("Invalid GT allele index " + std::to_string(allele) + " outside REF/ALT alleles at " + std::string(bcf_hdr_id2name(header, line->rid)) + ":" + std::to_string(line->pos + 1) + " sample " + std::to_string(isample));
+            gt[i] = allele;
+            phased = phased || (i > 0 && bcf_gt_is_phased(sample[i]));
         }
     }
 
@@ -516,7 +371,7 @@ namespace bcfhelpers
         }
         if(values.size() > 1)
         {
-            std::cerr << "[W] too many GQ fields at " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos << "\n";
+            std::cerr << "[W] too many GQ fields at " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos << "\n";
         }
         if(values.empty())
         {
@@ -536,11 +391,10 @@ namespace bcfhelpers
 
         std::vector<int> values;
         gf(header, line, "AD", isample, values);
-        if(max_ad < (int)values.size())
+        if (max_ad < 0 || values.size() > static_cast<size_t>(max_ad) ||
+            (!ad && !values.empty()))
         {
-            std::cerr << "[W] too many AD fields at " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos
-                      << " max_ad = " << max_ad << " retrieved: " << values.size()
-                      << "\n";
+            throw importexception("AD field exceeds destination capacity at " + std::string(bcf_hdr_id2name(header, line->rid)) + ":" + std::to_string(line->pos + 1) + " sample " + std::to_string(isample) + ": capacity=" + std::to_string(max_ad) + " values=" + std::to_string(values.size()) + "; destination was not written");
         }
         for(size_t q = 0; q < values.size(); ++q)
         {
@@ -562,7 +416,7 @@ namespace bcfhelpers
         }
         if(values.size() > 1)
         {
-            std::cerr << "[W] too many DP fields at " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos << "\n";
+            std::cerr << "[W] too many DP fields at " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos << "\n";
         }
         if(values.empty())
         {
@@ -585,7 +439,7 @@ namespace bcfhelpers
         if(values.size() > 1)
         {
             std::ostringstream os;
-            os << "[W] too many " << field << " fields at " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos;
+            os << "[W] too many " << field << " fields at " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos;
             throw importexception(os.str());
         }
         if(values.size() == 1)
@@ -616,7 +470,7 @@ namespace bcfhelpers
         if(values.size() > 1)
         {
             std::ostringstream os;
-            os << "[W] too many " << field << " fields at " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos;
+            os << "[W] too many " << field << " fields at " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos;
             throw importexception(os.str());
         }
         if(values.size() == 1)
@@ -638,107 +492,27 @@ namespace bcfhelpers
     /** read a format field as a single double. result will not be overwritten on failure */
     std::string getFormatString(const bcf_hdr_t * hdr, bcf1_t * line, const char * field, int isample, const char * result)
     {
-        int nsmpl = bcf_hdr_nsamples(hdr);
-        if (isample >= nsmpl)
+        if (isample < 0 || isample >= bcf_hdr_nsamples(hdr)) return result;
+        const int id = bcf_hdr_id2int(hdr, BCF_DT_ID, field);
+        if (!bcf_hdr_idinfo_exists(hdr, BCF_HL_FMT, id)) return result;
+        const int type = bcf_hdr_id2type(hdr, BCF_HL_FMT, id);
+        if (type == BCF_HT_INT)
         {
-            return result;
+            const auto values = getFormatInts(hdr, line, field, isample);
+            return values.empty() ? result : std::to_string(values.front());
         }
-
-        bcf_unpack(line, BCF_UN_FMT);
-        int tag_id = bcf_hdr_id2int(hdr, BCF_DT_ID, field);
-
-        if ( !bcf_hdr_idinfo_exists(hdr,BCF_HL_FMT,tag_id) )
+        if (type == BCF_HT_REAL)
         {
-            return result;
+            const auto values = getFormatFloats(hdr, line, field, isample);
+            return values.empty() ? result : std::to_string(values.front());
         }
-
-        if ( !(line->unpacked & BCF_UN_FMT) )
-        {
-            bcf_unpack(line, BCF_UN_FMT);
-        }
-
-        // index in format fields
-        int i = 0;
-        for (i = 0; i < line->n_fmt; i++)
-        {
-            if ( line->d.fmt[i].id == tag_id )
-            {
-                break;
-            }
-        }
-
-        if ( i == line->n_fmt )
-        {
-            return result;
-        }
-
-        bcf_fmt_t *fmt = &line->d.fmt[i];
-
-        if(fmt == NULL)
-        {
-            return result;
-        }
-
-        int type = fmt->type;
-
-        if(fmt->n < 1)
-        {
-            return result;
-        }
-
-        std::string str_result = result;
-        if ( type == BCF_BT_FLOAT )
-        {
-            static const auto make_missing_float = []() -> float
-            {
-                float f;
-                int32_t _mfloat = 0x7F800001;
-                memcpy(&f, &_mfloat, 4);
-                return f;
-            };
-            static const float bcf_missing_float = make_missing_float();
-            float res = *((float*)(fmt->p + isample*fmt->size));
-            if(res != bcf_missing_float)
-            {
-                str_result = std::to_string(res);
-            }
-        }
-        else if (type == BCF_BT_INT8)
-        {
-            int8_t r = *((int8_t*)(fmt->p + isample*fmt->size ));
-            if(r != bcf_int8_missing && r != bcf_int8_vector_end)
-            {
-                str_result = std::to_string(r);
-            }
-        }
-        else if (type == BCF_BT_INT16)
-        {
-            int16_t r = *(((int16_t*)(fmt->p)) + isample*fmt->size);
-            if(r != bcf_int16_missing && r != bcf_int16_vector_end)
-            {
-                str_result = std::to_string(r);
-            }
-        }
-        else if (type == BCF_BT_INT32)
-        {
-            int32_t r = *((int32_t*)(fmt->p + isample*fmt->size));
-            if(r != bcf_int32_missing && r == bcf_int32_vector_end)
-            {
-                str_result = std::to_string(r);
-            }
-        }
-        else
-        {
-            const char * src = (const char *)fmt->p + isample*fmt->size;
-            if(src && fmt->size)
-            {
-                str_result = std::string(src, (unsigned long) fmt->size);
-                // deal with 0 padding
-                str_result.resize(strlen(str_result.c_str()));
-            }
-        }
-
-        return str_result;
+        char **raw = nullptr;
+        int capacity = 0;
+        const int count = bcf_get_format_string(hdr, line, field, &raw, &capacity);
+        std::string value = result;
+        if (count > 0) value = raw[isample];
+        if (raw) { free(raw[0]); free(raw); }
+        return value;
     }
 
     /** update format string for a single sample.  */
@@ -753,7 +527,7 @@ namespace bcfhelpers
         {
             std::ostringstream os;
             os << "[W] cannot update format " << field
-               << " " << hdr->id[BCF_DT_ID][line->rid].key << ":" << line->pos
+               << " " << bcf_hdr_id2name(hdr, line->rid) << ":" << line->pos
                << " -- we have " << formats.size() << " for " << line->n_sample << " samples";
             throw importexception(os.str());
         }
@@ -778,7 +552,7 @@ namespace bcfhelpers
         if(res != 0)
         {
             std::ostringstream os;
-            os << "[W] cannot update format " << field << " " << hdr->id[BCF_DT_ID][line->rid].key << ":" << line->pos
+            os << "[W] cannot update format " << field << " " << bcf_hdr_id2name(hdr, line->rid) << ":" << line->pos
                << " -- we have " << formats.size() << " for " << line->n_sample << " samples";
             throw importexception(os.str());
         }
@@ -794,7 +568,7 @@ namespace bcfhelpers
             if(res != 0)
             {
                 std::ostringstream os;
-                os << "[W] cannot update format " << field << " " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos
+                os << "[W] cannot update format " << field << " " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos
                    << " -- we have " << value.size() << " for " << line->n_sample << " samples";
 
                 throw importexception(os.str());
@@ -819,7 +593,7 @@ namespace bcfhelpers
         if(res != 0)
         {
             std::ostringstream os;
-            os << "[W] cannot update format " << field << " " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos
+            os << "[W] cannot update format " << field << " " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos
                << " -- we have " << value.size() << " for " << line->n_sample << " samples";
             throw importexception(os.str());
         }
@@ -834,7 +608,7 @@ namespace bcfhelpers
             if(res != 0)
             {
                 std::ostringstream os;
-                os << "[W] cannot update format " << field << " " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos
+                os << "[W] cannot update format " << field << " " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos
                    << " -- we have " << value.size() << " for " << line->n_sample << " samples";
 
                 throw importexception(os.str());
@@ -859,7 +633,7 @@ namespace bcfhelpers
         if(res != 0)
         {
             std::ostringstream os;
-            os << "[W] cannot update format " << field << " " << header->id[BCF_DT_CTG][line->rid].key << ":" << line->pos
+            os << "[W] cannot update format " << field << " " << bcf_hdr_id2name(header, line->rid) << ":" << line->pos
                << " -- we have " << value.size() << " for " << line->n_sample << " samples";
             throw importexception(os.str());
         }

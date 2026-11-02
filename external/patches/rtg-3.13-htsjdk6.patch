@@ -1,0 +1,137 @@
+--- a/src/main/java/com/rtg/sam/SamClosedFileReader.java
++++ b/src/main/java/com/rtg/sam/SamClosedFileReader.java
+@@ -157,7 +157,7 @@
+       // - still wrapped around CFIS to minimize open files
+       // - Creates a new header copy for every file, rather than using the single uberheader available here, so janky for metagenomics
+       // - Uses htsjdk multi-region lookups rather than our code
+-      final File indexFile = SamFiles.findIndex(mFile);
++      final java.nio.file.Path indexFile = SamFiles.findIndex(mFile.toPath());
+       if (indexFile == null) {
+         throw new NoTalkbackSlimException("File " + mFile.getPath() + " is not indexed for " + mType.fileExtension());
+       }
+--- a/src/main/java/com/rtg/sam/SamOutput.java
++++ b/src/main/java/com/rtg/sam/SamOutput.java
+@@ -125,7 +125,7 @@
+       try {
+         final OutputStream samOutputstream = streamCreator.createStreamsAndStartThreads(header.getSequenceDictionary().size(), writeHeader, terminateBlockGzip);
+         try {
+-          final SAMFileWriterFactory fact = new SAMFileWriterFactory().setTempDirectory(filename.getAbsoluteFile().getParentFile()).setUseAsyncIo(true);
++          final SAMFileWriterFactory fact = new SAMFileWriterFactory().setTempDirectory(filename.getAbsoluteFile().getParentFile().toPath()).setUseAsyncIo(true);
+           final SAMFileWriter writer;
+           switch (type) {
+             case BAM:
+--- a/src/main/java/com/rtg/sam/SamUtils.java
++++ b/src/main/java/com/rtg/sam/SamUtils.java
+@@ -572,7 +572,7 @@
+     } else if (t == SamReader.Type.SAM_TYPE) { // We support tabixed block-compressed SAM
+       return TabixIndexer.indexFileName(file).exists();
+     } else {
+-      return SamFiles.findIndex(file) != null;
++      return SamFiles.findIndex(file.toPath()) != null;
+     }
+   }
+ 
+@@ -1062,7 +1062,7 @@
+    */
+   public static SamReader makeSamReader(File file, SequencesReader reference) throws IOException {
+     try {
+-      return getSamReaderFactory(reference).open(file);
++      return getSamReaderFactory(reference).open(file.toPath());
+     } catch (final RuntimeIOException e) {
+       throw (IOException) e.getCause();
+     }
+@@ -1086,7 +1086,7 @@
+    */
+   public static SamReader makeSamReader(File file) throws IOException {
+     try {
+-      return getSamReaderFactory(null).open(file);
++      return getSamReaderFactory(null).open(file.toPath());
+     } catch (final RuntimeIOException e) {
+       throw (IOException) e.getCause();
+     }
+--- a/src/main/java/com/rtg/tabix/IndexUtils.java
++++ b/src/main/java/com/rtg/tabix/IndexUtils.java
+@@ -61,7 +61,7 @@
+       Diagnostic.info("Block compressing file: " + f.getPath());
+       final File outFile = File.createTempFile(f.getName(), "", f.getAbsoluteFile().getParentFile());
+       try (InputStream is = FileUtils.createInputStream(f, false)) {
+-        try (BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(outFile)) {
++        try (BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(outFile.toPath())) {
+           FileUtils.streamToStream(is, bcos, 2048);
+         }
+       }
+--- a/src/main/java/com/rtg/tabix/IndexerCli.java
++++ b/src/main/java/com/rtg/tabix/IndexerCli.java
+@@ -234,7 +234,7 @@
+               continue;
+             }
+             Diagnostic.info("Creating index for: " + f.getPath() + " (" + indexFile.getName() + ")");
+-            CRAMBAIIndexer.createIndex(new ClosedFileInputStream(f), indexFile, null, ValidationStringency.SILENT);
++            CRAMBAIIndexer.createIndex(new ClosedFileInputStream(f), indexFile.toPath(), null, ValidationStringency.SILENT);
+             break;
+           case BAM:
+             if (!SamUtils.isBAMFile(f)) {
+--- a/src/main/java/com/rtg/tabix/TabixIndexMerge.java
++++ b/src/main/java/com/rtg/tabix/TabixIndexMerge.java
+@@ -78,7 +78,7 @@
+     }
+     final List<SequenceIndex> indexes = collapseIndexes(indexesSquared, sequenceNames);
+     TabixIndexer.mergeChunks(indexes);
+-    try (BlockCompressedOutputStream fos = new BlockCompressedOutputStream(output)) {
++    try (BlockCompressedOutputStream fos = new BlockCompressedOutputStream(output.toPath())) {
+       TabixIndexer.writeIndex(indexes, mergedHeader.getOptions(), Arrays.asList(mergedHeader.getSequenceNamesUnpacked()), fos);
+     }
+   }
+--- a/src/main/java/com/rtg/tabix/TabixIndexer.java
++++ b/src/main/java/com/rtg/tabix/TabixIndexer.java
+@@ -201,7 +201,7 @@
+     final ArrayList<SequenceIndex> indexs = new ArrayList<>();
+     populateIndex(indexs, in, false);
+     mergeChunks(indexs);
+-    try (BlockCompressedOutputStream indexOut = new BlockCompressedOutputStream(samIndex, (File) null)) {
++    try (BlockCompressedOutputStream indexOut = new BlockCompressedOutputStream(samIndex, (java.nio.file.Path) null)) {
+       writeIndex(indexs, ops, in.getSequenceNames(), indexOut);
+     }
+   }
+--- a/src/test/java/com/rtg/sam/SamUtilsTest.java
++++ b/src/test/java/com/rtg/sam/SamUtilsTest.java
+@@ -76,7 +76,7 @@
+       SamUtils.updateRunId(header);
+ 
+       final SAMFileWriterFactory fact = new SAMFileWriterFactory();
+-      try (SAMFileWriter writer = fact.makeBAMWriter(header, true, outFile)) {
++      try (SAMFileWriter writer = fact.makeBAMWriter(header, true, outFile.toPath())) {
+         while (sam.hasNext()) {
+           final SAMRecord record = sam.next();
+           try {
+--- a/src/test/java/com/rtg/tabix/GenericPositionReaderTest.java
++++ b/src/test/java/com/rtg/tabix/GenericPositionReaderTest.java
+@@ -54,7 +54,7 @@
+ 
+   private static GenericPositionReader makeGpr(String contents) throws IOException {
+     final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+-    try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(baos, (File) null)) {
++    try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(baos, (java.nio.file.Path) null)) {
+       out.write(contents.getBytes());
+     }
+     final ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+--- a/src/test/java/com/rtg/util/test/BgzipFileHelper.java
++++ b/src/test/java/com/rtg/util/test/BgzipFileHelper.java
+@@ -75,7 +75,7 @@
+     if (file == null) {
+       throw new NullPointerException("null file given");
+     }
+-    try (OutputStream out = new BlockCompressedOutputStream(file)) {
++    try (OutputStream out = new BlockCompressedOutputStream(file.toPath())) {
+       final byte[] b = new byte[FileUtils.BUFFER_SIZE];
+       int len = stream.read(b);
+       while (len > 0) {
+@@ -93,7 +93,7 @@
+    * @throws IOException if an IO error occurs
+    */
+   public static File bytesToBgzipFile(byte[] data, File f) throws IOException {
+-    try (BlockCompressedOutputStream out = new BlockCompressedOutputStream(f)) {
++    try (BlockCompressedOutputStream out = new BlockCompressedOutputStream(f.toPath())) {
+       out.write(data);
+     }
+     return f;

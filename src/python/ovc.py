@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -24,18 +26,32 @@
 # Peter Krusche <pkrusche@illumina.com>
 #
 
-import sys
+import argparse
+import gzip
 
-f = open(sys.argv[1])
 
-last = -1
+def main() -> int:
+    parser = argparse.ArgumentParser(description='Check BED intervals for overlaps')
+    parser.add_argument('input')
+    args = parser.parse_args()
+    opener = gzip.open if args.input.endswith('.gz') else open
+    last, chromosome = -1, None
+    with opener(args.input, 'rt', encoding='utf-8') as stream:
+        for number, line in enumerate(stream, 1):
+            if not line.strip() or line.startswith(('#', 'track', 'browser')):
+                continue
+            fields = line.split('\t')
+            if len(fields) < 3:
+                raise ValueError(f'Invalid BED at line {number}')
+            start, end = int(fields[1]), int(fields[2])
+            if fields[0] != chromosome:
+                last, chromosome = -1, fields[0]
+            if start < last:
+                print(f'Overlap at {chromosome}:{start} (line {number})')
+                return 1
+            last = end
+    return 0
 
-lines = 1
-for line in f:
-	l = line.split("\t")
-	if len(l) > 3 and (last-1) > int(l[1]):
-		print "Overlap at %s:%i (line %i)" % (l[0], int(l[1]), lines)
-		exit(1)
-	elif len(l) > 3:
-		last = int(l[2])
-	lines += 1
+
+if __name__ == '__main__':
+    raise SystemExit(main())

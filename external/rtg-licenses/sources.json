@@ -1,0 +1,139 @@
+{
+  "resources": [
+    {
+      "path": "nashorn-15.7/LICENSE",
+      "url": "https://raw.githubusercontent.com/openjdk/nashorn/release-15.7/LICENSE",
+      "sha256": "4b9abebc4338048a7c2dc184e9f800deb349366bdf28eb23c2677a77b4c87726"
+    },
+    {
+      "path": "nashorn-15.7/ADDITIONAL_LICENSE_INFO",
+      "url": "https://raw.githubusercontent.com/openjdk/nashorn/release-15.7/ADDITIONAL_LICENSE_INFO",
+      "sha256": "69369283a3e40c098832bf4fd4fe38c7b780679a2a58d8f32fa892f639ed8424"
+    },
+    {
+      "path": "nashorn-15.7/double-conversion.md",
+      "url": "https://raw.githubusercontent.com/openjdk/nashorn/release-15.7/src/org.openjdk.nashorn/share/legal/double-conversion.md",
+      "sha256": "7fcefc04d3f440e76f7cf1867c6bc01a9a3a01491c56b49db30f65156880bd43"
+    },
+    {
+      "path": "nashorn-15.7/joni.md",
+      "url": "https://raw.githubusercontent.com/openjdk/nashorn/release-15.7/src/org.openjdk.nashorn/share/legal/joni.md",
+      "sha256": "42af97be383c0d60d0104b6385fad7525280eeae3b63a6be34f494f9a5e9b21b"
+    },
+    {
+      "path": "jlibdeflate-0.2.0/LICENSE",
+      "url": "https://raw.githubusercontent.com/fulcrumgenomics/jlibdeflate/c4d9c72f361c65b1a906675e4f3071d6f325eb4d/LICENSE",
+      "sha256": "1410e01612c99f99f767258cd071781f2e0593284612d337063536cf54bfb2eb"
+    },
+    {
+      "path": "libdeflate-1.26/COPYING",
+      "url": "https://raw.githubusercontent.com/ebiggers/libdeflate/92e6a0db9fa848d742f9eb286c92afc60f2c3dda/COPYING",
+      "sha256": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a"
+    },
+    {
+      "path": "htsjdk-5.0.2/README.upstream",
+      "url": "https://raw.githubusercontent.com/samtools/htsjdk/5.0.2/README.md",
+      "sha256": "ec5b4805115f5b0a67468a28b5655cc03f4118025630cbc66f2cc5da15d45ce2"
+    },
+    {
+      "path": "asm-9.11.1/LICENSE",
+      "url": "https://gitlab.ow2.org/asm/asm/-/raw/ASM_9_11_1/LICENSE.txt",
+      "sha256": "293b6af371eee28b0ff16f0334ea19e20a3d5522143faa4b95b346855507879a"
+    },
+    {
+      "path": "xz-1.12/COPYING",
+      "url": "https://raw.githubusercontent.com/tukaani-project/xz-java/v1.12/COPYING",
+      "sha256": "1e77ef26cee5216d6531e49cbf2f6111a0270dc7b322fc65477063c5aff88766"
+    },
+    {
+      "path": "json-20260814/LICENSE",
+      "url": "https://raw.githubusercontent.com/stleary/JSON-java/20260814/LICENSE",
+      "sha256": "86cc84f1773e3318ba26fd61b3ae508a167df38b361695e105f6e499e7a2736f"
+    },
+    {
+      "path": "json-simple-1.1.1/LICENSE",
+      "url": "https://raw.githubusercontent.com/fangyidong/json-simple/tag_release_1_1_1/LICENSE.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "snappy-java-1.1.10.12/LICENSE",
+      "url": "https://raw.githubusercontent.com/xerial/snappy-java/v1.1.10.12/LICENSE",
+      "sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5"
+    },
+    {
+      "path": "snappy-java-1.1.10.12/NOTICE",
+      "url": "https://raw.githubusercontent.com/xerial/snappy-java/v1.1.10.12/NOTICE",
+      "sha256": "396e5ff756e04da010095628e43cdc9c0b49bd4fd9319e7c52423db6d3cdf00c"
+    },
+    {
+      "path": "spotbugs-annotations-4.10.5/LICENSE",
+      "url": "https://raw.githubusercontent.com/spotbugs/spotbugs/4.10.5/LICENSE",
+      "sha256": "9b872a8a070b8ad329c4bd380fb1bf0000f564c75023ec8e1e6803f15364b9e9"
+    },
+    {
+      "path": "shared/Apache-2.0.txt",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "jsr305-3.0.2/sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2-sources.jar",
+      "sha256": "1c9e85e272d0708c6a591dc74828c71603053b48cc75ae83cce56912a2aa063b"
+    },
+    {
+      "path": "jsr305-3.0.2/pom.xml",
+      "url": "https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.pom",
+      "sha256": "19889dbdf1b254b2601a5ee645b8147a974644882297684c798afe5d63d78dfe"
+    },
+    {
+      "path": "spotbugs-annotations-4.10.5/sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5-sources.jar",
+      "sha256": "d49eaae5b1632212eac00349903258a3b3ad083c63917a07b675de24b7f2b7b9"
+    },
+    {
+      "path": "spotbugs-annotations-4.10.5/pom.xml",
+      "url": "https://repo.maven.apache.org/maven2/com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.pom",
+      "sha256": "6c33a7bdd1152db96d57b10659c29df5cb2ca32032698b7e58486783269973ef"
+    },
+    {
+      "path": "snappy-java-1.1.10.12/VERSION",
+      "url": "https://raw.githubusercontent.com/xerial/snappy-java/v1.1.10.12/src/main/resources/org/xerial/snappy/VERSION",
+      "sha256": "dd8fd6bcf2cd8c59fbbfc3805cf6bab2bfc57d47cf83c77063a63e1b004066a2"
+    },
+    {
+      "path": "snappy-java-1.1.10.12/Makefile.upstream",
+      "url": "https://raw.githubusercontent.com/xerial/snappy-java/v1.1.10.12/Makefile",
+      "sha256": "d83d8e94c918f4b690e5364a63851d1e28e6a4b280c36faeaf35552f1d6a834c"
+    },
+    {
+      "path": "snappy-1.1.10/COPYING",
+      "url": "https://raw.githubusercontent.com/google/snappy/1.1.10/COPYING",
+      "sha256": "55172044f7e241207117448a4d9d6ba1d0925c8ad66b5d4c08c70adfa9cc3de6"
+    },
+    {
+      "path": "bitshuffle-0.3.4/LICENSE",
+      "url": "https://raw.githubusercontent.com/kiyo-masui/bitshuffle/0.3.4/LICENSE",
+      "sha256": "ef357c2061cf67db298f9f1565572ee229ad9263582a9f9d0ebff5094f5d10ac"
+    },
+    {
+      "path": "snappy-java-1.1.10.12/GCC-RUNTIME-EXCEPTION",
+      "url": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-4.8.5/COPYING.RUNTIME",
+      "sha256": "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74"
+    },
+    {
+      "path": "shared/LGPL-2.1.txt",
+      "url": "https://raw.githubusercontent.com/spotbugs/spotbugs/4.10.5/LICENSE",
+      "sha256": "9b872a8a070b8ad329c4bd380fb1bf0000f564c75023ec8e1e6803f15364b9e9"
+    },
+    {
+      "path": "htsjdk-jexl-history/VariantJEXLContext.java",
+      "url": "https://raw.githubusercontent.com/samtools/htsjdk/f411234a06597773c3842725c76561dfd64226c1/src/java/org/broadinstitute/variant/variantcontext/VariantJEXLContext.java",
+      "sha256": "c5f676be18a323b4250c07341b411852c6d2789adb9ba3ac5666d2ec4b745c4d"
+    }
+  ],
+  "upstream_commits": {
+    "nashorn-15.7": "4923f1e70e460d87c0eeb1f5232344487d46108d",
+    "jlibdeflate-0.2.0": "c4d9c72f361c65b1a906675e4f3071d6f325eb4d",
+    "libdeflate-1.26": "92e6a0db9fa848d742f9eb286c92afc60f2c3dda"
+  }
+}

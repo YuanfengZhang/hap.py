@@ -1,106 +1,59 @@
-# Top-level Cmake file for Haplotype Tools
-#
-# Author: Peter Krusche <pkrusche@illumina.com>
-#
-cmake_minimum_required (VERSION 2.8)
-project (HAPLOTYPES)
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+cmake_minimum_required(VERSION 3.24)
+project(HAPLOTYPES LANGUAGES C CXX)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(HAPPY_DEPENDENCY_PREFIX "" CACHE PATH "Preinstalled dependency prefix")
+if(HAPPY_DEPENDENCY_PREFIX)
+    list(PREPEND CMAKE_PREFIX_PATH "${HAPPY_DEPENDENCY_PREFIX}")
+    set(HTSLIB_ROOT "${HAPPY_DEPENDENCY_PREFIX}")
+endif()
+set(HAPLOTYPES_VERSION "development" CACHE STRING "Explicit build version")
+set(HAPLOTYPES_VERSION "$CACHE{HAPLOTYPES_VERSION}")
+option(BUILD_VCFEVAL "Install an already built RTG Tools distribution" OFF)
+set(RTG_ROOT "" CACHE PATH "Audited RTG distribution")
+option(USE_SGE "Enable SGE support" OFF)
+set(VCFEVAL_AVAILABLE 0)
+set(SGE_AVAILABLE 0)
+if(USE_SGE)
+    set(SGE_AVAILABLE 1)
+endif()
+if(BUILD_VCFEVAL)
+    if(NOT EXISTS "${RTG_ROOT}/rtg")
+        message(FATAL_ERROR "BUILD_VCFEVAL requires RTG_ROOT; configuration never downloads dependencies")
+    endif()
+    set(VCFEVAL_AVAILABLE 1)
+    install(DIRECTORY "${RTG_ROOT}/" DESTINATION libexec/rtg-tools-install USE_SOURCE_PERMISSIONS)
+    install(PROGRAMS "${CMAKE_SOURCE_DIR}/external/rtg-launcher.sh" DESTINATION libexec/rtg-tools-install RENAME rtg)
+endif()
+# Installed executables retain a controlled external dependency prefix.
+# This installation is intentionally not relocatable independently of that prefix.
+set(CMAKE_INSTALL_RPATH "${HAPPY_DEPENDENCY_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 include(cxx)
 include(configureFiles)
-
-if(BUILD_VCFEVAL)
-    message("Will build rtg-tools.")
-    set( ENV{BUILD_VCFEVAL} "1" )
-    set( ENV{VCFEVAL_WRAPPER} ${VCFEVAL_WRAPPER} )
-    set (VCFEVAL_AVAILABLE 1)
-else()
-    set (VCFEVAL_AVAILABLE 0)
-endif()
-
-execute_process(
-    COMMAND ${CMAKE_SOURCE_DIR}/external/make_dependencies.sh
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    RESULT_VARIABLE EXTERNAL_SUCCESS)
-
-if(NOT "${EXTERNAL_SUCCESS}" STREQUAL "0")
-    message(FATAL_ERROR "Building external dependencies has failed")
-endif()
-
-set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
-set(Boost_USE_MULTITHREADED      ON)
-set(Boost_USE_STATIC_RUNTIME     ON)
-
-# un-break library finding
-set(Boost_NO_BOOST_CMAKE         ON)
-set(Boost_NO_SYSTEM_PATHS        ON)
-
-set(BOOST_ROOT ${CMAKE_BINARY_DIR})
-message("Using our own Boost, which was built at ${HAPLOTYPES_SOURCE_DIR}/external/boost_install")
-
-find_package(Boost 1.55.0 COMPONENTS thread iostreams regex unit_test_framework filesystem system program_options REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
-
-include_directories (${CMAKE_BINARY_DIR}/include)
-link_directories (${CMAKE_BINARY_DIR}/lib)
-
-# make sure we use the bundled zlib version
-set(ZLIB_LIBRARIES ${CMAKE_BINARY_DIR}/lib/libz.a)
-
-include_directories (${HAPLOTYPES_SOURCE_DIR}/external/klib)
-include_directories (${HAPLOTYPES_SOURCE_DIR}/external/intervaltree)
-include_directories (${HAPLOTYPES_SOURCE_DIR}/external/jsoncpp)
-include_directories (${HAPLOTYPES_SOURCE_DIR}/src/c++/include)
-
-# install bcftools, samtools, htslib
-if(USE_SGE)
-    message("SGE mode selected, you will need to use --force-interactive to run hap.py")
-    set (SGE_AVAILABLE 1)
-else()
-    set (SGE_AVAILABLE 0)
-endif()
-
-include(FindHTSLib)
-
-find_package (Threads REQUIRED)
-
-# make libraries first
-add_subdirectory (external)
-add_subdirectory (src/c++/lib)
-
-set(HAPLOTYPES_ALL_LIBS ${HAPLOTYPES_LIBRARY}
-                        ${GSSW_LIBRARY}
-                        ${KLIB_LIBRARY}
-                        ${JSONCPP_LIBRARY}
-                        ${Boost_LIBRARIES}
-                        ${HTSLIB_LIBRARIES}
-                        ${ZLIB_LIBRARIES}
-                        ${CMAKE_THREAD_LIBS_INIT})
-
-
-execute_process(COMMAND git describe --tags --always
-    OUTPUT_VARIABLE HAPLOTYPES_VERSION
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/c++/include/Version.hh.in"
-               "${CMAKE_BINARY_DIR}/include/Version.hh")
-
-add_subdirectory (src/c++/main)
-add_subdirectory (src/data)
-add_subdirectory (src/c++/test)
-add_subdirectory (src/python)
-
-# install
-install (DIRECTORY "${CMAKE_BINARY_DIR}/bin/" DESTINATION bin FILES_MATCHING PATTERN "*" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_READ WORLD_EXECUTE)
-install (DIRECTORY "${CMAKE_BINARY_DIR}/lib/" DESTINATION lib)
-if(BUILD_VCFEVAL)
-    install (DIRECTORY "${CMAKE_BINARY_DIR}/libexec/" DESTINATION libexec USE_SOURCE_PERMISSIONS)
-endif()
+find_package(Python3 3.14 REQUIRED COMPONENTS Interpreter)
+find_package(Boost 1.92 CONFIG REQUIRED COMPONENTS thread iostreams regex unit_test_framework filesystem program_options)
+find_package(ZLIB 1.3.2 REQUIRED)
+find_package(jsoncpp 1.9.8 CONFIG REQUIRED)
+find_package(HTSLib 1.24 REQUIRED)
+find_package(Threads REQUIRED)
+include_directories("${CMAKE_BINARY_DIR}/include" "${CMAKE_SOURCE_DIR}/external/klib" "${CMAKE_SOURCE_DIR}/src/c++/include" ${Boost_INCLUDE_DIRS} ${HTSLIB_INCLUDE_DIRS})
+add_subdirectory(external)
+add_subdirectory(src/c++/lib)
+set(HAPLOTYPES_ALL_LIBS ${HAPLOTYPES_LIBRARY} ${KLIB_LIBRARY} JsonCpp::JsonCpp Boost::thread Boost::iostreams Boost::regex Boost::unit_test_framework Boost::filesystem Boost::program_options HTSLib::HTSLib ZLIB::ZLIB Threads::Threads)
+configure_file(src/c++/include/Version.hh.in "${CMAKE_BINARY_DIR}/include/Version.hh")
+add_subdirectory(src/c++/main)
+add_subdirectory(src/data)
+add_subdirectory(src/c++/test)
+add_subdirectory(src/python)
+install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/" DESTINATION bin USE_SOURCE_PERMISSIONS)
+install(DIRECTORY "${CMAKE_BINARY_DIR}/lib/" DESTINATION lib USE_SOURCE_PERMISSIONS)
+foreach(tool bcftools samtools bgzip tabix)
+    unset(HAPPY_${tool} CACHE)
+    find_program(HAPPY_${tool} NAMES ${tool} PATHS "${HAPPY_DEPENDENCY_PREFIX}/bin" NO_DEFAULT_PATH REQUIRED)
+    file(WRITE "${CMAKE_BINARY_DIR}/${tool}-launcher" "#!/bin/sh\nexec \"${HAPPY_${tool}}\" \"$@\"\n")
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/${tool}-launcher" DESTINATION bin RENAME "${tool}")
+endforeach()

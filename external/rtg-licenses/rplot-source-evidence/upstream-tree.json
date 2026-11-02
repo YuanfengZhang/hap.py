@@ -1,0 +1,1335 @@
+{
+  "sha": "67c13667d2b1bcb8d8dda8a9c1de9ae323102b3b",
+  "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/67c13667d2b1bcb8d8dda8a9c1de9ae323102b3b",
+  "tree": [
+    {
+      "path": ".cvscheck",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f5c84340403d2ffaed738fd64c52cacf71f21b80",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/f5c84340403d2ffaed738fd64c52cacf71f21b80"
+    },
+    {
+      "path": ".cvscheck/checkstyle-extra-checks.jar",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3d2405041cd90845ceee0063b0a91ced0a5b11b3",
+      "size": 17565,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/3d2405041cd90845ceee0063b0a91ced0a5b11b3"
+    },
+    {
+      "path": ".cvscheck/checkstyle_config.xml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2ac142982f492e2cdde30c78929401317841a808",
+      "size": 7714,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/2ac142982f492e2cdde30c78929401317841a808"
+    },
+    {
+      "path": ".cvscheck/checkstyle_config_rplot_test.xml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "57b33e0db6a5d6cdc117e7cb461ed89f1e7959b7",
+      "size": 4002,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/57b33e0db6a5d6cdc117e7cb461ed89f1e7959b7"
+    },
+    {
+      "path": ".cvscheck/checkstyle_suppressions.xml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "48efcd17b2cde8edea4c7b4c533b2dbb982ac8da",
+      "size": 934,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/48efcd17b2cde8edea4c7b4c533b2dbb982ac8da"
+    },
+    {
+      "path": ".cvscheck/spelling.case-insensitive",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cce458d76514c7c01b4ed43164876d4b2eef930d",
+      "size": 37,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/cce458d76514c7c01b4ed43164876d4b2eef930d"
+    },
+    {
+      "path": ".cvscheck/spelling.case-sensitive",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc4c9120653adc7f445ca452a4af145b82b6cefa",
+      "size": 12,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/dc4c9120653adc7f445ca452a4af145b82b6cefa"
+    },
+    {
+      "path": ".cvscheck/webrun_rplot.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "198b8b75a77d893dedccf3ae0d9b72f44cd83edd",
+      "size": 1406,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/198b8b75a77d893dedccf3ae0d9b72f44cd83edd"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a00ce1475c4b6244fe0ede1927c896c5b7effe56",
+      "size": 17,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/a00ce1475c4b6244fe0ede1927c896c5b7effe56"
+    },
+    {
+      "path": "LICENSE.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d50d645caebcf22f713d7d81c8ffc1cdc1676527",
+      "size": 1335,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/d50d645caebcf22f713d7d81c8ffc1cdc1676527"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7ba028c3217846fb5dd3bc069ec369eadc774049",
+      "size": 2156,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/7ba028c3217846fb5dd3bc069ec369eadc774049"
+    },
+    {
+      "path": "build.xml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f7dfd4dc58381ec46815a17cb0cfbb8711998e28",
+      "size": 8707,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/f7dfd4dc58381ec46815a17cb0cfbb8711998e28"
+    },
+    {
+      "path": "lib",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "248b66fb1c973c094ed10eeaa33680f8771e6f83",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/248b66fb1c973c094ed10eeaa33680f8771e6f83"
+    },
+    {
+      "path": "lib/VectorGraphics2D-0.13-42-gc1e96b4.jar",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6006064078706b02fc9c3e33f04c6951354156e9",
+      "size": 117228,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6006064078706b02fc9c3e33f04c6951354156e9"
+    },
+    {
+      "path": "lib/checkstyle-5.5-all.jar",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e7f3c3a76d82b787bd42a83f0f3c2b4b44b7b117",
+      "size": 2043543,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/e7f3c3a76d82b787bd42a83f0f3c2b4b44b7b117"
+    },
+    {
+      "path": "lib/junit.jar",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "674d71e89ea154dbe2e3cd032821c22b39e8fd68",
+      "size": 121070,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/674d71e89ea154dbe2e3cd032821c22b39e8fd68"
+    },
+    {
+      "path": "rplot-example-2.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6335dd03e528fa4f41a9f6fabba8c85a5c63bf71",
+      "size": 21195,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6335dd03e528fa4f41a9f6fabba8c85a5c63bf71"
+    },
+    {
+      "path": "rplot-example.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cec93e6d72d695cb99edbad649a7e9fe441320fd",
+      "size": 18829,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/cec93e6d72d695cb99edbad649a7e9fe441320fd"
+    },
+    {
+      "path": "src",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7b7a270f581dc5f98c2ed1b889e96861e5e6f439",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/7b7a270f581dc5f98c2ed1b889e96861e5e6f439"
+    },
+    {
+      "path": "src/com",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f1f8af92de8c4b30a7c094abf4e8d0c2024f4f29",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/f1f8af92de8c4b30a7c094abf4e8d0c2024f4f29"
+    },
+    {
+      "path": "src/com/reeltwo",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "1fe78513e9a8a344f8190b1a7d1f724eff90a603",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/1fe78513e9a8a344f8190b1a7d1f724eff90a603"
+    },
+    {
+      "path": "src/com/reeltwo/plot",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7507152530553f8f6d4bb0a15105ec5e32bb15f0",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/7507152530553f8f6d4bb0a15105ec5e32bb15f0"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Arrow2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "17c6ab4a2890fa16af7cc297239f74fb81fd84e7",
+      "size": 3935,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/17c6ab4a2890fa16af7cc297239f74fb81fd84e7"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ArrowPlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7388be0c972bf2d16fc1a48c688a89ee13a94ea2",
+      "size": 3416,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/7388be0c972bf2d16fc1a48c688a89ee13a94ea2"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Axis.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3b25cbcd0880ebd19827c0137e6e90911269c8b2",
+      "size": 141,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/3b25cbcd0880ebd19827c0137e6e90911269c8b2"
+    },
+    {
+      "path": "src/com/reeltwo/plot/BWPlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "797396f5f351e03d268dcf297d146751378869b3",
+      "size": 2098,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/797396f5f351e03d268dcf297d146751378869b3"
+    },
+    {
+      "path": "src/com/reeltwo/plot/BWPoint2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "88b6bf55b8cc0857414a38a9719667318b6de7dc",
+      "size": 3046,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/88b6bf55b8cc0857414a38a9719667318b6de7dc"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Box2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ee497bb193fc78709cf26958f568745baad4a881",
+      "size": 2933,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/ee497bb193fc78709cf26958f568745baad4a881"
+    },
+    {
+      "path": "src/com/reeltwo/plot/BoxPlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "59a7f96411b2d7dab7e29f25e8daa09ed08e0226",
+      "size": 858,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/59a7f96411b2d7dab7e29f25e8daa09ed08e0226"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Circle2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "deeee3ec7d984c7c3a93b50835bc7511ac173ec1",
+      "size": 1695,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/deeee3ec7d984c7c3a93b50835bc7511ac173ec1"
+    },
+    {
+      "path": "src/com/reeltwo/plot/CirclePlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f6e6a1d7d1158e07025d1540f031287992286c3",
+      "size": 870,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/8f6e6a1d7d1158e07025d1540f031287992286c3"
+    },
+    {
+      "path": "src/com/reeltwo/plot/CurvePlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df2593296be933b6549b01987a0da69225a97868",
+      "size": 1700,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/df2593296be933b6549b01987a0da69225a97868"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Datum2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5384ddf17ea1dd3b46e1e8662199977e6eb5abbb",
+      "size": 625,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/5384ddf17ea1dd3b46e1e8662199977e6eb5abbb"
+    },
+    {
+      "path": "src/com/reeltwo/plot/DefaultFormatter.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5f117cf0abee4baa48ab9a80fd9e6524c5e5189d",
+      "size": 1008,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/5f117cf0abee4baa48ab9a80fd9e6524c5e5189d"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Edge.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ce7b52f1b3f51c4b013786d3947d3a7699066f4a",
+      "size": 215,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/ce7b52f1b3f51c4b013786d3947d3a7699066f4a"
+    },
+    {
+      "path": "src/com/reeltwo/plot/FillablePlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b42c02f3af66b75d60daaa72875820c8bf98dd31",
+      "size": 1886,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b42c02f3af66b75d60daaa72875820c8bf98dd31"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Graph2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1fd57e4b2867cd326a6e798ce6f931c47796504f",
+      "size": 15589,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/1fd57e4b2867cd326a6e798ce6f931c47796504f"
+    },
+    {
+      "path": "src/com/reeltwo/plot/GraphAxis.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a29d5400f0a8f653e43dcce111b8dd52eb3be844",
+      "size": 5888,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/a29d5400f0a8f653e43dcce111b8dd52eb3be844"
+    },
+    {
+      "path": "src/com/reeltwo/plot/GraphLine.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "616ecb447da92d0dfa7ff9223e0bb71be350cd8f",
+      "size": 2623,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/616ecb447da92d0dfa7ff9223e0bb71be350cd8f"
+    },
+    {
+      "path": "src/com/reeltwo/plot/KeyPosition.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bc202473ce0ee00740a5ab274b6ce11d63c27a67",
+      "size": 396,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/bc202473ce0ee00740a5ab274b6ce11d63c27a67"
+    },
+    {
+      "path": "src/com/reeltwo/plot/LabelFormatter.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5b33d1dad374b5272f4b64533fb2ced45af22789",
+      "size": 338,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/5b33d1dad374b5272f4b64533fb2ced45af22789"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Note2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "52b139a2774ade43501b3bead49820c9f248c7b7",
+      "size": 941,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/52b139a2774ade43501b3bead49820c9f248c7b7"
+    },
+    {
+      "path": "src/com/reeltwo/plot/NotePlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1dfe6c5a9a8b316d52131253d31d4efb5490baa5",
+      "size": 1827,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/1dfe6c5a9a8b316d52131253d31d4efb5490baa5"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ObjectPoint2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "68959765c300909d3fa4e30687f497d1fd903674",
+      "size": 1884,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/68959765c300909d3fa4e30687f497d1fd903674"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Plot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8e342951eb52c28d3f22233afcc35e7562e71754",
+      "size": 5150,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/8e342951eb52c28d3f22233afcc35e7562e71754"
+    },
+    {
+      "path": "src/com/reeltwo/plot/PlotUtils.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f44e4ea120fbc6cca1e2ffcfebfd8b1084be9cdd",
+      "size": 2278,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/f44e4ea120fbc6cca1e2ffcfebfd8b1084be9cdd"
+    },
+    {
+      "path": "src/com/reeltwo/plot/Point2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5c5956311eb2274808934ade47e1f6d607890c0",
+      "size": 2150,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/d5c5956311eb2274808934ade47e1f6d607890c0"
+    },
+    {
+      "path": "src/com/reeltwo/plot/PointPlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9cd3eb4d64422c3f3c9fbd6d5a7f08684ca9e32f",
+      "size": 2173,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/9cd3eb4d64422c3f3c9fbd6d5a7f08684ca9e32f"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ScatterPlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "64512a79497d06c596aa3092f4cb3676d5083b9d",
+      "size": 1320,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/64512a79497d06c596aa3092f4cb3676d5083b9d"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ScatterPoint2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6c0c43e588dde3ef97afc18b049cc17bcf167c8d",
+      "size": 1774,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6c0c43e588dde3ef97afc18b049cc17bcf167c8d"
+    },
+    {
+      "path": "src/com/reeltwo/plot/StringFormatter.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "964b2b13e55411b7ab9d75b3f980b587007c3108",
+      "size": 1035,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/964b2b13e55411b7ab9d75b3f980b587007c3108"
+    },
+    {
+      "path": "src/com/reeltwo/plot/TextPlot2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d5321d0c75354b844f28babf2b4fb5caa88cf365",
+      "size": 4365,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/d5321d0c75354b844f28babf2b4fb5caa88cf365"
+    },
+    {
+      "path": "src/com/reeltwo/plot/TextPoint2D.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "79ae9da5cb1e34faf561d60095bc4f6b2c5cd9b5",
+      "size": 747,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/79ae9da5cb1e34faf561d60095bc4f6b2c5cd9b5"
+    },
+    {
+      "path": "src/com/reeltwo/plot/demo",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "98a0e769cea71feb42f68d44d46da228ce8d1a6a",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/98a0e769cea71feb42f68d44d46da228ce8d1a6a"
+    },
+    {
+      "path": "src/com/reeltwo/plot/demo/MemoryMonitor.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e300effd3a1bd3e2b60f162ca0c4404d7a866b7f",
+      "size": 6820,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/e300effd3a1bd3e2b60f162ca0c4404d7a866b7f"
+    },
+    {
+      "path": "src/com/reeltwo/plot/demo/MemoryPanel.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6df2b5d9c64e9525d8aa928ad1e6fc289b363aee",
+      "size": 7324,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6df2b5d9c64e9525d8aa928ad1e6fc289b363aee"
+    },
+    {
+      "path": "src/com/reeltwo/plot/demo/MemoryUsage.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b99699c3520673fe3f1e6ec84a032823e384d94e",
+      "size": 3589,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b99699c3520673fe3f1e6ec84a032823e384d94e"
+    },
+    {
+      "path": "src/com/reeltwo/plot/demo/SwingPlot.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "99b21525faf473c67f193a11cd84aa2096897614",
+      "size": 9919,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/99b21525faf473c67f193a11cd84aa2096897614"
+    },
+    {
+      "path": "src/com/reeltwo/plot/demo/TextPlot.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b3fb64d5f70cd6607b9f03a2acdf55dde45d5b85",
+      "size": 553,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b3fb64d5f70cd6607b9f03a2acdf55dde45d5b85"
+    },
+    {
+      "path": "src/com/reeltwo/plot/demo/package.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "07393a71cf1c2b4179b24f84d5e5bb998a5dc39c",
+      "size": 97,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/07393a71cf1c2b4179b24f84d5e5bb998a5dc39c"
+    },
+    {
+      "path": "src/com/reeltwo/plot/package.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16086ce085aa7f892f299a8d02c89b5694aa3c43",
+      "size": 136,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/16086ce085aa7f892f299a8d02c89b5694aa3c43"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "737e35ebcb1b946e5ac5e30198b69f0ed4127a99",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/737e35ebcb1b946e5ac5e30198b69f0ed4127a99"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/BW8x8PatternGroup.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "337d5adf684bb32e6bed137593167f988b7a85e3",
+      "size": 1949,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/337d5adf684bb32e6bed137593167f988b7a85e3"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/DefaultColorGroup.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6abe28020fe007ef7d80ec7838c90ebb009414ab",
+      "size": 1081,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6abe28020fe007ef7d80ec7838c90ebb009414ab"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/GrayScaleColorGroup.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d02e6171cca99eab1c206b924b697b6c13448dff",
+      "size": 1483,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/d02e6171cca99eab1c206b924b697b6c13448dff"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/PatternGroup.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "07498af76fdc2ceeb9f1d903cf634b979a62721c",
+      "size": 576,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/07498af76fdc2ceeb9f1d903cf634b979a62721c"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/package.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "36836e80cd1f48b3cab164edf58415e7e87de9d1",
+      "size": 98,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/36836e80cd1f48b3cab164edf58415e7e87de9d1"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t1.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "010531901f00f8e97ff0f183cbee77ea7497416b",
+      "size": 75,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/010531901f00f8e97ff0f183cbee77ea7497416b"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t10.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "910610f1f6d4153f63c2f5ea761ccbba12c99256",
+      "size": 75,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/910610f1f6d4153f63c2f5ea761ccbba12c99256"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t11.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7e0a85376c248c06937b8f8d04ced84e9989c1e1",
+      "size": 75,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/7e0a85376c248c06937b8f8d04ced84e9989c1e1"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t12.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b8e567c52b598a5c36be1757456b29dded9bff82",
+      "size": 72,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b8e567c52b598a5c36be1757456b29dded9bff82"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t13.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e2bbb8ddc8929f302b30ec0175313ded73cfb38",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6e2bbb8ddc8929f302b30ec0175313ded73cfb38"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t14.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b288e06bc95b54ac3a2967a1f70769aa543e04a0",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b288e06bc95b54ac3a2967a1f70769aa543e04a0"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t15.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a3aee25cc6ea06beaf9f5f1bcc9cac52fb9b140f",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/a3aee25cc6ea06beaf9f5f1bcc9cac52fb9b140f"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t16.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "272f997fe53aeda17e1675a09bed4b7994191ec0",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/272f997fe53aeda17e1675a09bed4b7994191ec0"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t17.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "706d503f7e0ebafa3c66d2124cab9abee0468b4b",
+      "size": 81,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/706d503f7e0ebafa3c66d2124cab9abee0468b4b"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t18.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b9efffb43a3a5900dde8ceb3742cb3677c2d708b",
+      "size": 81,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b9efffb43a3a5900dde8ceb3742cb3677c2d708b"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t19.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f05db39369d80bfcd2236b4a056b47c7cb51218e",
+      "size": 69,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/f05db39369d80bfcd2236b4a056b47c7cb51218e"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t2.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4efd1ff6e1352c10b09bc5de3b053e02c5d1c43c",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/4efd1ff6e1352c10b09bc5de3b053e02c5d1c43c"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t20.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "92c164d050ffa5d131a87b4d2e274de23ade6521",
+      "size": 74,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/92c164d050ffa5d131a87b4d2e274de23ade6521"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t21.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "48f78042891f65eaf8c6c351547d4344a0e044b1",
+      "size": 69,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/48f78042891f65eaf8c6c351547d4344a0e044b1"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t22.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c260258bf7f93e8fb75d253e0fd48c791def4622",
+      "size": 71,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/c260258bf7f93e8fb75d253e0fd48c791def4622"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t23.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cbdc42640c61b2bc6c36e21d0841426ad0fd858e",
+      "size": 69,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/cbdc42640c61b2bc6c36e21d0841426ad0fd858e"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t24.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4def1a6b34db17cc94455f281c32e586fe0b0972",
+      "size": 73,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/4def1a6b34db17cc94455f281c32e586fe0b0972"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t25.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d1b443e385d0650148ac52b7db0a2186974c103",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/9d1b443e385d0650148ac52b7db0a2186974c103"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t26.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4b80472e0fcd83a91c0e1ea4c012e9b6fe5ea752",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/4b80472e0fcd83a91c0e1ea4c012e9b6fe5ea752"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t27.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "915b6899cc6622177825daac99fa963002150c8c",
+      "size": 75,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/915b6899cc6622177825daac99fa963002150c8c"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t28.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44cbaa25792644ad4a2d52770e8181f57280cd05",
+      "size": 73,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/44cbaa25792644ad4a2d52770e8181f57280cd05"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t29.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a195621003964e16770c97e072d3cd9a3748f4b",
+      "size": 82,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/8a195621003964e16770c97e072d3cd9a3748f4b"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t3.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "45c60f827a0404a1af96b6aac198cfa839552383",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/45c60f827a0404a1af96b6aac198cfa839552383"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t30.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5270447c4b3dde21a36dc6457a6bc47ef68bad56",
+      "size": 81,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/5270447c4b3dde21a36dc6457a6bc47ef68bad56"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t31.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7c822841e1a19824cd3083a789787264d8efe3f2",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/7c822841e1a19824cd3083a789787264d8efe3f2"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t32.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "92e8b597618aa9f5cc67c5f57a61bdee380f9909",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/92e8b597618aa9f5cc67c5f57a61bdee380f9909"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t33.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "72650d988d41b8cb357c440f145811e546ef9453",
+      "size": 82,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/72650d988d41b8cb357c440f145811e546ef9453"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t34.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23aefbc158c8acb826e56f762842cd55379e0477",
+      "size": 78,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/23aefbc158c8acb826e56f762842cd55379e0477"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t35.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8e81a754e1ef7fbeb8e0c97678e2117ec789033a",
+      "size": 80,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/8e81a754e1ef7fbeb8e0c97678e2117ec789033a"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t36.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a92bce01a2661bf595085e359a20e5c9be747cf",
+      "size": 75,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/8a92bce01a2661bf595085e359a20e5c9be747cf"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t37.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a99a4a20871fa45362a8102bae756892ee25ecd3",
+      "size": 80,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/a99a4a20871fa45362a8102bae756892ee25ecd3"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t38.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a419d925b69d5b626b01cb36f494c247ba901422",
+      "size": 74,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/a419d925b69d5b626b01cb36f494c247ba901422"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t39.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d8018cc43ad506550d9bb2a9eebeee33c0b60f6c",
+      "size": 77,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/d8018cc43ad506550d9bb2a9eebeee33c0b60f6c"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t4.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9efd8b9216157d2ae5ffbbf2f5b96b09c80bbaef",
+      "size": 71,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/9efd8b9216157d2ae5ffbbf2f5b96b09c80bbaef"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t40.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "810a10b08de850613eccd6f2ec0f87c00f8a5168",
+      "size": 80,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/810a10b08de850613eccd6f2ec0f87c00f8a5168"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t41.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b38045a1d5180c0708b9f78668a57887c9a03624",
+      "size": 74,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b38045a1d5180c0708b9f78668a57887c9a03624"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t42.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0239837c08a1dcccb765d4781d6508ac0540f3e5",
+      "size": 79,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/0239837c08a1dcccb765d4781d6508ac0540f3e5"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t43.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11c384916d18e175008e2eb9dc1df7c577575b66",
+      "size": 74,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/11c384916d18e175008e2eb9dc1df7c577575b66"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t44.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "73c3572f423feaa882a34f376a346802f1de518f",
+      "size": 72,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/73c3572f423feaa882a34f376a346802f1de518f"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t45.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44ff5d1abd52864647ff3eb8acc86c6ef867c764",
+      "size": 74,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/44ff5d1abd52864647ff3eb8acc86c6ef867c764"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t46.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f003b411194bb2ef3e25b0fece7bdbf76940ed3d",
+      "size": 73,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/f003b411194bb2ef3e25b0fece7bdbf76940ed3d"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t47.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d3add630936f9e95c999fdc68d830df301db137",
+      "size": 80,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/9d3add630936f9e95c999fdc68d830df301db137"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t48.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "709c81dd6d3be3eff8fa428f11d4d5d1422195be",
+      "size": 80,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/709c81dd6d3be3eff8fa428f11d4d5d1422195be"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t5.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cb4d3ee7c0bd7424915fb5a414df0eb5b5c2f71e",
+      "size": 74,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/cb4d3ee7c0bd7424915fb5a414df0eb5b5c2f71e"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t6.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ba7e87c40d876e18f0ccbcfa93aba47e333d99e9",
+      "size": 75,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/ba7e87c40d876e18f0ccbcfa93aba47e333d99e9"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t7.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3651709e0deabd027955deaa8c757e66e69128d7",
+      "size": 71,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/3651709e0deabd027955deaa8c757e66e69128d7"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t8.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c936ba8b0efbd397bb490d05db34b203e5afc9a4",
+      "size": 76,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/c936ba8b0efbd397bb490d05db34b203e5afc9a4"
+    },
+    {
+      "path": "src/com/reeltwo/plot/patterns/t9.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7b76a959bfae1c5708c9473d87324be769f06af4",
+      "size": 71,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/7b76a959bfae1c5708c9473d87324be769f06af4"
+    },
+    {
+      "path": "src/com/reeltwo/plot/renderer",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "bf74ea8c92474b2ca7a00d4f10bc2493a6230a83",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/bf74ea8c92474b2ca7a00d4f10bc2493a6230a83"
+    },
+    {
+      "path": "src/com/reeltwo/plot/renderer/AbstractRenderer.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ae6afe380b649385c6524f21db0147574a9f736b",
+      "size": 33663,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/ae6afe380b649385c6524f21db0147574a9f736b"
+    },
+    {
+      "path": "src/com/reeltwo/plot/renderer/GraphicsRenderer.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "95a34faaef94aced8b789918343c41cdfd636d43",
+      "size": 42870,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/95a34faaef94aced8b789918343c41cdfd636d43"
+    },
+    {
+      "path": "src/com/reeltwo/plot/renderer/Mapping.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "014dad491af80e4884b62a260b8674e8e51432c7",
+      "size": 3916,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/014dad491af80e4884b62a260b8674e8e51432c7"
+    },
+    {
+      "path": "src/com/reeltwo/plot/renderer/TextRenderer.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6e5de19a09404b1d68f1a2892f5595b4bcb1c234",
+      "size": 22483,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6e5de19a09404b1d68f1a2892f5595b4bcb1c234"
+    },
+    {
+      "path": "src/com/reeltwo/plot/renderer/package.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "04e3aeb838efb1be1168d06af2de477fd8491bc0",
+      "size": 79,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/04e3aeb838efb1be1168d06af2de477fd8491bc0"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7ea9916ea1107575c70d749fe9a4a623bb86f1ad",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/7ea9916ea1107575c70d749fe9a4a623bb86f1ad"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/GraphPrinter.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "14f27daa4d21ace295c1970c71838023d957a7da",
+      "size": 3021,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/14f27daa4d21ace295c1970c71838023d957a7da"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/GraphSaver.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5cbee957c9ba9516cc7a0480738ccbce4f135a0b",
+      "size": 5219,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/5cbee957c9ba9516cc7a0480738ccbce4f135a0b"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/ImageWriter.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc8416341be3f44214c32e1a8111226da31590c2",
+      "size": 11024,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/dc8416341be3f44214c32e1a8111226da31590c2"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/InnerZoomPlot.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "12a56430c32f74ed52da23d4596936e52be3590d",
+      "size": 14741,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/12a56430c32f74ed52da23d4596936e52be3590d"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/PlotDialog.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c7795324773b22d01ede9c6e30af69cec1b94d62",
+      "size": 3248,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/c7795324773b22d01ede9c6e30af69cec1b94d62"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/PlotPanel.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cf425e488b41afd8b78b92521e0f9cbaf14ba91e",
+      "size": 9893,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/cf425e488b41afd8b78b92521e0f9cbaf14ba91e"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/ToolTipProvider.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "98a2a1d597029091e75440a1564f7220e32bd93e",
+      "size": 782,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/98a2a1d597029091e75440a1564f7220e32bd93e"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/ZoomPlotDialog.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "271102cec500346e0dda0510f8ac63ae4d34b49d",
+      "size": 1766,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/271102cec500346e0dda0510f8ac63ae4d34b49d"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/ZoomPlotPanel.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "df6b52aa312a2035f86abd6de3fe7c2631170afe",
+      "size": 15360,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/df6b52aa312a2035f86abd6de3fe7c2631170afe"
+    },
+    {
+      "path": "src/com/reeltwo/plot/ui/package.html",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "11ae9623cfda3c02a634d02fc6767504a1e7bf4f",
+      "size": 140,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/11ae9623cfda3c02a634d02fc6767504a1e7bf4f"
+    },
+    {
+      "path": "test",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7c58a4c71658879d63b5e41424fa0f8cf0f4c734",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/7c58a4c71658879d63b5e41424fa0f8cf0f4c734"
+    },
+    {
+      "path": "test/AllTests.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e38bb6ee7596156feba904f936f824e57806a09e",
+      "size": 458,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/e38bb6ee7596156feba904f936f824e57806a09e"
+    },
+    {
+      "path": "test/com",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "60665302cfa421da6ff7e5df6dfca8bb560da800",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/60665302cfa421da6ff7e5df6dfca8bb560da800"
+    },
+    {
+      "path": "test/com/reeltwo",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6cd1c796ad15039bd525b1980869da1b0868a70e",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/6cd1c796ad15039bd525b1980869da1b0868a70e"
+    },
+    {
+      "path": "test/com/reeltwo/plot",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "39b0fa8559023e07092ba956dc5216d4def59590",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/39b0fa8559023e07092ba956dc5216d4def59590"
+    },
+    {
+      "path": "test/com/reeltwo/plot/AbstractDatum2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fc6e9dfb7699d1dbe26def2f3ef35467fc9ccfe7",
+      "size": 1129,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/fc6e9dfb7699d1dbe26def2f3ef35467fc9ccfe7"
+    },
+    {
+      "path": "test/com/reeltwo/plot/AbstractFillablePlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c56e266efa7c56a6c995aabd9c57ba6456736e50",
+      "size": 828,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/c56e266efa7c56a6c995aabd9c57ba6456736e50"
+    },
+    {
+      "path": "test/com/reeltwo/plot/AbstractPlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "453f898ee2eaf7918d100c8785b85eb7ba092610",
+      "size": 4426,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/453f898ee2eaf7918d100c8785b85eb7ba092610"
+    },
+    {
+      "path": "test/com/reeltwo/plot/AllTests.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ab93958b8d742417c0569a203636482bfb0a8e80",
+      "size": 1426,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/ab93958b8d742417c0569a203636482bfb0a8e80"
+    },
+    {
+      "path": "test/com/reeltwo/plot/Arrow2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8835f4248b08e1359d897f525cb62d943578ec95",
+      "size": 2685,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/8835f4248b08e1359d897f525cb62d943578ec95"
+    },
+    {
+      "path": "test/com/reeltwo/plot/ArrowPlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6fc919bb034af19d3baa0c5c52ea52ff9b19bb2c",
+      "size": 3736,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6fc919bb034af19d3baa0c5c52ea52ff9b19bb2c"
+    },
+    {
+      "path": "test/com/reeltwo/plot/BWPlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b6ae2302961d983a133ddacb2309c392a26ac28c",
+      "size": 1983,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b6ae2302961d983a133ddacb2309c392a26ac28c"
+    },
+    {
+      "path": "test/com/reeltwo/plot/BWPoint2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "353409a51d7e652b1b0585e6e487b99c549bde96",
+      "size": 2278,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/353409a51d7e652b1b0585e6e487b99c549bde96"
+    },
+    {
+      "path": "test/com/reeltwo/plot/Box2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6271404572122a676cf783cf35a890374b5d8d0f",
+      "size": 2221,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6271404572122a676cf783cf35a890374b5d8d0f"
+    },
+    {
+      "path": "test/com/reeltwo/plot/BoxPlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "acd052ce2ad19eaa1ab50c923b81230787f567fe",
+      "size": 1133,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/acd052ce2ad19eaa1ab50c923b81230787f567fe"
+    },
+    {
+      "path": "test/com/reeltwo/plot/Circle2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b445bea241d705b1f0fa2ca80e6143af0bce545c",
+      "size": 1272,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b445bea241d705b1f0fa2ca80e6143af0bce545c"
+    },
+    {
+      "path": "test/com/reeltwo/plot/CirclePlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aeaaafa0bdf321dceaa79ea1f5a7d8ae4ba2cd1b",
+      "size": 1158,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/aeaaafa0bdf321dceaa79ea1f5a7d8ae4ba2cd1b"
+    },
+    {
+      "path": "test/com/reeltwo/plot/CurvePlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d1f5a9c114f0bf1d45e4563d554395f15d76c542",
+      "size": 1996,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/d1f5a9c114f0bf1d45e4563d554395f15d76c542"
+    },
+    {
+      "path": "test/com/reeltwo/plot/DefaultFormatterTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "318603bb6624af3155a7501cd2b2ea5eba8da834",
+      "size": 959,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/318603bb6624af3155a7501cd2b2ea5eba8da834"
+    },
+    {
+      "path": "test/com/reeltwo/plot/Graph2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c1c99b0809ac6b8ff7ee10ec682e00eb2c6c8452",
+      "size": 7036,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/c1c99b0809ac6b8ff7ee10ec682e00eb2c6c8452"
+    },
+    {
+      "path": "test/com/reeltwo/plot/PlotUtilsTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3751e97b919ac1120fab1cf2f9af8f98773432e2",
+      "size": 1566,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/3751e97b919ac1120fab1cf2f9af8f98773432e2"
+    },
+    {
+      "path": "test/com/reeltwo/plot/Point2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6bb080c13bcb35f257d1de4c08d55bc91641008f",
+      "size": 1321,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/6bb080c13bcb35f257d1de4c08d55bc91641008f"
+    },
+    {
+      "path": "test/com/reeltwo/plot/PointPlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1cc9aa4c1be58a6593232c7fd10104df02848af7",
+      "size": 2368,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/1cc9aa4c1be58a6593232c7fd10104df02848af7"
+    },
+    {
+      "path": "test/com/reeltwo/plot/ScatterPlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "08ace2254445c3cb8ba4712045bc1c2f7d7b15d1",
+      "size": 1487,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/08ace2254445c3cb8ba4712045bc1c2f7d7b15d1"
+    },
+    {
+      "path": "test/com/reeltwo/plot/ScatterPoint2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "926663926bec01d2613b5e9275a1e1763cb90b0e",
+      "size": 1363,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/926663926bec01d2613b5e9275a1e1763cb90b0e"
+    },
+    {
+      "path": "test/com/reeltwo/plot/TextPlot2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "170f6e68773299f91dd215183b1cd4394e434954",
+      "size": 2550,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/170f6e68773299f91dd215183b1cd4394e434954"
+    },
+    {
+      "path": "test/com/reeltwo/plot/TextPoint2DTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1ac8aca5aaa3cfda975c907d22638ea374e5a468",
+      "size": 1620,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/1ac8aca5aaa3cfda975c907d22638ea374e5a468"
+    },
+    {
+      "path": "test/com/reeltwo/plot/patterns",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "550295457120475facbe3fb208ca67f54063e1c4",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/550295457120475facbe3fb208ca67f54063e1c4"
+    },
+    {
+      "path": "test/com/reeltwo/plot/patterns/AbstractPatternGroupTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b7461fac84e24b3bed0016ed5c433b927bdaa1f2",
+      "size": 915,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/b7461fac84e24b3bed0016ed5c433b927bdaa1f2"
+    },
+    {
+      "path": "test/com/reeltwo/plot/patterns/AllTests.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0f12e392798ba9255e68481e83eb1c7c26e3f23f",
+      "size": 688,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/0f12e392798ba9255e68481e83eb1c7c26e3f23f"
+    },
+    {
+      "path": "test/com/reeltwo/plot/patterns/BW8x8PatternGroupTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8fdec58c0335475bec401d1952bdbc5d770cd095",
+      "size": 1114,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/8fdec58c0335475bec401d1952bdbc5d770cd095"
+    },
+    {
+      "path": "test/com/reeltwo/plot/patterns/DefaultColorGroupTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "214fb86f7e0ddf422bb219f3858247531239ac6b",
+      "size": 1105,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/214fb86f7e0ddf422bb219f3858247531239ac6b"
+    },
+    {
+      "path": "test/com/reeltwo/plot/patterns/GrayScaleColorGroupTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "debe14e5e1d74fe166651f9232a26cf7669f5f49",
+      "size": 1778,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/debe14e5e1d74fe166651f9232a26cf7669f5f49"
+    },
+    {
+      "path": "test/com/reeltwo/plot/renderer",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e392c714dbc2ab61112e921ad87df029382d1357",
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/trees/e392c714dbc2ab61112e921ad87df029382d1357"
+    },
+    {
+      "path": "test/com/reeltwo/plot/renderer/AllTests.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d2e08d8c511748d6cbdc2de0c29fcaca130fdc00",
+      "size": 575,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/d2e08d8c511748d6cbdc2de0c29fcaca130fdc00"
+    },
+    {
+      "path": "test/com/reeltwo/plot/renderer/MappingTest.java",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4edc5bf681456cda1af8c8ad73d7cff4ecde38ee",
+      "size": 1424,
+      "url": "https://api.github.com/repos/RealTimeGenomics/rplot/git/blobs/4edc5bf681456cda1af8c8ad73d7cff4ecde38ee"
+    }
+  ],
+  "truncated": false
+}

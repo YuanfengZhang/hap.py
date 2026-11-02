@@ -1,0 +1,136 @@
+{
+  "checked_on": "2026-10-29",
+  "artifacts": [
+    {
+      "name": "nashorn-core-15.7.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/openjdk/nashorn/nashorn-core/15.7/nashorn-core-15.7.jar",
+      "sha256": "3f2b62e55b5458ba2e8a0cc4599aa3abe81b1422e31c38bb8294a7096ceee6f2"
+    },
+    {
+      "name": "asm-commons-9.11.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-commons/9.11.1/asm-commons-9.11.1.jar",
+      "sha256": "6a5095ec53726156a78b2cd2efd45bc4e877754eca7c234f61224a53d6bfa661"
+    },
+    {
+      "name": "jsr305-3.0.2.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
+      "sha256": "766ad2a0783f2687962c8ad74ceecc38a28b9f72a2d085ee438b7813e928d0c7"
+    },
+    {
+      "name": "junit-4.13.2.jar",
+      "url": "https://repo.maven.apache.org/maven2/junit/junit/4.13.2/junit-4.13.2.jar",
+      "sha256": "8e495b634469d64fb8acfa3495a065cbacc8a0fff55ce1e31007be4c16dc57d3"
+    },
+    {
+      "name": "hamcrest-3.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/hamcrest/hamcrest/3.0/hamcrest-3.0.jar",
+      "sha256": "5d66b6a4a680755cb6ed7cb104fa7835ef644667586ff0737adeb977c39ecdbc"
+    },
+    {
+      "name": "commons-lang3-3.21.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.21.0/commons-lang3-3.21.0.jar",
+      "sha256": "a2af247ec4db6eb8947e18e23e0433e4871a7c5d0a40e1f92e46ede54ae1defe"
+    },
+    {
+      "name": "snappy-java-1.1.10.12.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/xerial/snappy/snappy-java/1.1.10.12/snappy-java-1.1.10.12.jar",
+      "sha256": "1c03ce77b3f2e926c25a952612e372404d80bc88c6c8052bede964804fabd732"
+    },
+    {
+      "name": "htsjdk-6.0.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/github/samtools/htsjdk/6.0.0/htsjdk-6.0.0.jar",
+      "sha256": "b34209e13b01905d07bc4ad8e7b14e98f2c2a3dcd0d63c4f95de50df445f44b7"
+    },
+    {
+      "name": "spotbugs-annotations-4.10.5.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/github/spotbugs/spotbugs-annotations/4.10.5/spotbugs-annotations-4.10.5.jar",
+      "sha256": "2f28af17ad61a7daad0f3df070198c4a5807d3ffd98a5408f670cd19fc2dce84"
+    },
+    {
+      "name": "commons-io-2.22.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/commons-io/commons-io/2.22.0/commons-io-2.22.0.jar",
+      "sha256": "2b9a7b1f726fb86216dbd2c8321eabe0221dbd5b1be81c18e1cb53811b104758"
+    },
+    {
+      "name": "xz-1.12.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/tukaani/xz/1.12/xz-1.12.jar",
+      "sha256": "3e158a87bd73d8afb4b6e8239c013b7d049c48563f45860ce99cd2e448cf4a6b"
+    },
+    {
+      "name": "commons-compress-1.28.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar",
+      "sha256": "e1522945218456f3649a39bc4afd70ce4bd466221519dba7d378f2141a4642ca"
+    },
+    {
+      "name": "velocity-engine-core-2.4.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/apache/velocity/velocity-engine-core/2.4.1/velocity-engine-core-2.4.1.jar",
+      "sha256": "1c19157d1171d560088e485be97c93a7a2f7e9f56e517f0a30273c5c39df6231"
+    },
+    {
+      "name": "asm-util-9.11.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-util/9.11.1/asm-util-9.11.1.jar",
+      "sha256": "23fdffacdfc38f447cbd8b80e058f462451fa5d4709e437067d530fa6513579d"
+    },
+    {
+      "name": "slf4j-api-2.0.20.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.20/slf4j-api-2.0.20.jar",
+      "sha256": "7e1446499b359675d8aabe6af2de86b85e72ae8a2a932c0b40d0e5ba57097439"
+    },
+    {
+      "name": "asm-tree-9.11.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-tree/9.11.1/asm-tree-9.11.1.jar",
+      "sha256": "2b15c3c1b288a9fad3bb2cd6d988ba9521554914ed1f2a2029141fa3f483154a"
+    },
+    {
+      "name": "commons-codec-1.23.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.23.0/commons-codec-1.23.0.jar",
+      "sha256": "47504a3ce71d73a1b0af07675546b8d8c5af87f82ef12b6381f9eb3c17dd5a5b"
+    },
+    {
+      "name": "commons-jexl3-3.7.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-jexl3/3.7.1/commons-jexl3-3.7.1.jar",
+      "sha256": "a3d48cfcd4ca18eff86d85f6d1fe246cc3681d2794c6c7e09ce8deabbfc01fb8"
+    },
+    {
+      "name": "asm-9.11.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/ow2/asm/asm/9.11.1/asm-9.11.1.jar",
+      "sha256": "ae4e6e10d59d0a1500317764b21881ad883f8550e33c66e6142f7032c6fb566c"
+    },
+    {
+      "name": "commons-logging-1.4.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.4.0/commons-logging-1.4.0.jar",
+      "sha256": "d175dbd751dd782a63bde28c7a039520e971f25e84b79c19b8435edc3603e0dc"
+    },
+    {
+      "name": "asm-analysis-9.11.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/ow2/asm/asm-analysis/9.11.1/asm-analysis-9.11.1.jar",
+      "sha256": "3a91769287d0a186333d6e384e5d4eec37e4b8f705dcf920ff4aea4cc452fac2"
+    },
+    {
+      "name": "json-20260814.jar",
+      "url": "https://repo.maven.apache.org/maven2/org/json/json/20260814/json-20260814.jar",
+      "sha256": "7dd2de1533e766e2b6c07d8194da85145ad313a167a4760050f5c9b6839604fe"
+    },
+    {
+      "name": "json-simple-1.1.1.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/googlecode/json-simple/json-simple/1.1.1/json-simple-1.1.1.jar",
+      "sha256": "4e69696892b88b41c55d49ab2fdcc21eead92bf54acc588c0050596c3b75199c"
+    },
+    {
+      "name": "jlibdeflate-0.2.0.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/fulcrumgenomics/jlibdeflate/0.2.0/jlibdeflate-0.2.0.jar",
+      "sha256": "db5ba08f964c265ddb8f17dec1a8dcb206132a4b68afe2a60206b7adaa9b2b80"
+    },
+    {
+      "name": "rtg-3.13.tar.gz",
+      "url": "https://github.com/RealTimeGenomics/rtg-tools/archive/refs/tags/3.13.tar.gz",
+      "sha256": "91b4af7fea769912a1bd807bb8d09a8f6b9af27034cd0b598838b48aae97425c"
+    },
+    {
+      "name": "htsjdk-6.0.0-sources.jar",
+      "url": "https://repo.maven.apache.org/maven2/com/github/samtools/htsjdk/6.0.0/htsjdk-6.0.0-sources.jar",
+      "sha256": "245636730e95678e0d2fea75e355cbe746c752356b54ecc27509a8bd349b1181"
+    }
+  ],
+  "profile": "HTSJDK6 candidate; production selection requires separate acceptance"
+}

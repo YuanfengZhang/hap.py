@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 # Simple performance and consistency test.
 #
 
@@ -9,6 +7,11 @@ set +e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . ${DIR}/detect_vars.sh
+
+# The neighborhood-distance contract is independent of the historical golden data retained below.
+DISTANCE_CONTRACT_ROOT=$(mktemp -d "${TMPDIR}/happy-distance-contract.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_scmp_distance_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${DISTANCE_CONTRACT_ROOT}/results" || exit 1
 
 echo "SCMP test for ${HCVERSION} from ${HCDIR}"
 

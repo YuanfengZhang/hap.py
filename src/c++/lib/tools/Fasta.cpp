@@ -75,10 +75,10 @@ public:
         filename(_filename)
     {
         struct stat st;
-        stat(_filename.c_str(), &st);
+        if (stat(_filename.c_str(), &st) != 0) error("Cannot stat FASTA reference: %s", _filename.c_str());
         filesize = (size_t) st.st_size;
         fd = open(_filename.c_str(), O_RDONLY, 0);
-        assert(fd != -1);
+        if (fd == -1) error("Cannot open FASTA reference: %s", _filename.c_str());
 #if __APPLE__
         base = (uint8_t *) mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
 #else
@@ -94,7 +94,7 @@ public:
         auto fai_fp = fopen((filename + ".fai").c_str(), "r");
         if(!fai_fp)
         {
-            assert(fai_build(filename.c_str()) == 0);
+            if (fai_build(filename.c_str()) != 0) error("Cannot build FASTA index: %s", filename.c_str());
         }
         else
         {

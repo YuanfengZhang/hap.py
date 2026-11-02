@@ -1,0 +1,73 @@
+{
+  "version": "grch38-insertion-conf-flanks-v1",
+  "legacy_vcf_sha256": "5a291d70adefd65c8e9227f168c051df19f83bd5a0799f58aeb40b40dee081d8",
+  "record_count": 86917,
+  "projection_fields": [
+    "variant key",
+    "FILTER",
+    "TRUTH/QUERY GT BD BK BVT BLT"
+  ],
+  "insertion_keys": [
+    [
+      "chr21",
+      10703105,
+      "C",
+      [
+        "CCAT",
+        "CTCCATTCCATTCCAT"
+      ]
+    ],
+    [
+      "chr21",
+      13408863,
+      "T",
+      [
+        "TA"
+      ]
+    ],
+    [
+      "chr21",
+      21467428,
+      "T",
+      [
+        "TTA",
+        "TATATATATATATATCTTTA"
+      ]
+    ],
+    [
+      "chr21",
+      26062230,
+      "A",
+      [
+        "ACAC"
+      ]
+    ],
+    [
+      "chr21",
+      31788923,
+      "T",
+      [
+        "TATC"
+      ]
+    ],
+    [
+      "chr21",
+      37295298,
+      "T",
+      [
+        "TAAAATCC"
+      ]
+    ]
+  ],
+  "input_sha256": {
+    "PG_Conf_hg38-chr21.bed.gz": "7e2d3112b4db217d1e18d96388809f571e8b2812231721b04059803629c81100",
+    "PG_NA12878_hg38-chr21.vcf.gz": "25e6b19ea7447e37bab5648bf6f037b6a05f3e15b43493e7b46b464ed9bff834",
+    "NA12878-GATK3-chr21.vcf.gz": "7ab4c325a4a2e1702f021963e4e48fdac56cec5dba239cd19a736103f248d99c",
+    "hg38.chr21.fa": "634829fe7eba3074f481818a448f7e504e19bdcb992d3388aad4de034739e0b2",
+    "stratification.tsv": "2c03c55aa121e2d2fd954ab37d403962ac6a67bdacfdefb1b7682e5cfeea2faf",
+    "exons_hg38.bed.gz": "1a01588d8fe203a5f85f16cc40337d23a7a4351bc12abd359c8a6e5096dc82b9",
+    "expected-stratified.summary.csv": "0d9081e50a313ffa28ebd7bbe5aabcc61843b9ecccd4d3a93a5693282fb7d56c"
+  },
+  "scope": "Reclassify only the six legacy-output records independently confirmed by both-flank coverage; not a baseline generated from new output",
+  "expected_records": "insertion-boundary-expected-v1.jsonl.gz"
+}

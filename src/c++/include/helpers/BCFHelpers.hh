@@ -76,10 +76,13 @@ namespace bcfhelpers {
     }
 
     /**
-     * @brief Set hg19 contig names in header.
+     * @brief Set sequence dictionary from the actual FASTA/FAI.
      * @param header BCF header
      */
-    void bcfHeaderHG19(bcf_hdr_t * header);
+    void bcfHeaderFromReference(bcf_hdr_t * header, const char * reference);
+
+    /** Seek using public region APIs; false means the chromosome is absent from indexed regions. */
+    bool seek(bcf_srs_t *readers, const char *chromosome, int64_t position);
 
     /* get list of sample names from BCF header */
     std::list<std::string> getSampleNames(const bcf_hdr_t * hdr);
@@ -87,7 +90,7 @@ namespace bcfhelpers {
     /** shortcut to get chromosome name */
     static inline std::string getChrom(const bcf_hdr_t * hdr, const bcf1_t * rec)
     {
-        return hdr->id[BCF_DT_CTG][rec->rid].key;
+        return bcf_hdr_id2name(hdr, rec->rid);
     }
 
     /** extract pos / length */

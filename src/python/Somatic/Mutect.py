@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -26,7 +28,7 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
         records = []
 
         if not avg_depth:
-            logging.warn("No average depths available, normalized depth features cannot be calculated")
+            logging.warning("No average depths available, normalized depth features cannot be calculated")
 
         hdrs = extractHeadersJSON(vcfname)
 
@@ -42,14 +44,14 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
                 if f["key"] == "GATKCommandLine" and f["values"]["ID"].lower() == "mutect":
                     clopts = f["values"]["CommandLineOptions"]
                     # ... tumor_sample_name=HCC2218_tumour ... normal_sample_name=HCC2218_normal
-                    m = re.search("tumor_sample_name=([^\s]+)", clopts)
+                    m = re.search(r"tumor_sample_name=([^\s]+)", clopts)
                     if m:
                         tsn = m.group(1)
                         for i, x in enumerate(samples):
                             if x == tsn:
                                 t_sample = "S.%i." % (i+1)
                                 break
-                    m = re.search("normal_sample_name=([^\s]+)", clopts)
+                    m = re.search(r"normal_sample_name=([^\s]+)", clopts)
                     if m:
                         nsn = m.group(1)
                         for i, x in enumerate(samples):
@@ -58,7 +60,7 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
                                 break
 
         except:
-            logging.warn("Unable to detect tumour / normal sample order from VCF header")
+            logging.warning("Unable to detect tumour / normal sample order from VCF header")
 
         logging.info("Normal sample name : %s (prefix %s) / tumour sample name : %s (prefix %s)" % (nsn, n_sample,
                                                                                                     tsn, t_sample))
@@ -82,7 +84,7 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = "."
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
 
             # fix missing features
@@ -95,14 +97,14 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = 0
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
                 else:
                     # list features
                     if q.endswith("AD") or q.endswith("QSS"):
                         if type(rec[q]) is not list:
                             if not q + "_PARSE_FAIL" in has_warned:
-                                logging.warn("Cannot parse %s: %s" % (q, str(rec[q])))
+                                logging.warning("Cannot parse %s: %s" % (q, str(rec[q])))
                                 has_warned[q + "_PARSE_FAIL"] = True
                                 rec[q] = [0] * (1 + len(rec["ALT"]))
 
@@ -135,10 +137,10 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
                     n_DP_ratio      = n_DP/float(avg_depth[rec["CHROM"]])
                     t_DP_ratio      = t_DP/float(avg_depth[rec["CHROM"]])
                 elif not rec["CHROM"] in has_warned:
-                    logging.warn("Cannot normalize depths on %s" % rec["CHROM"])
+                    logging.warning("Cannot normalize depths on %s" % rec["CHROM"])
                     has_warned[rec["CHROM"]] = True
             elif not "DPnorm" in has_warned:
-                logging.warn("Cannot normalize depths.")
+                logging.warning("Cannot normalize depths.")
                 has_warned["DPnorm"] = True
 
             n_allele_ref_count = rec[n_sample + "AD"][0]
@@ -148,7 +150,7 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
                 n_allele_alt_count = 0
             else:
                 n_allele_alt_count = 0
-                for a in xrange(0, len(alleles_alt)):
+                for a in range(0, len(alleles_alt)):
                     n_allele_alt_count += float(rec[n_sample + "AD"][a + 1])
 
             if n_allele_alt_count + n_allele_ref_count == 0:
@@ -163,7 +165,7 @@ def extractMutectSNVFeatures(vcfname, tag, avg_depth=None):
                 t_allele_alt_count = 0
             else:
                 t_allele_alt_count = 0
-                for a in xrange(0, len(alleles_alt)):
+                for a in range(0, len(alleles_alt)):
                     t_allele_alt_count += float(rec[t_sample + "AD"][a + 1])
 
             if t_allele_alt_count + t_allele_ref_count == 0:
@@ -220,7 +222,7 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
         records = []
 
         if not avg_depth:
-            logging.warn("No average depths available, normalized depth features cannot be calculated")
+            logging.warning("No average depths available, normalized depth features cannot be calculated")
 
         hdrs = extractHeadersJSON(vcfname)
 
@@ -236,14 +238,14 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
                 if f["key"] == "GATKCommandLine" and f["values"]["ID"].lower() == "mutect":
                     clopts = f["values"]["CommandLineOptions"]
                     # ... tumor_sample_name=HCC2218_tumour ... normal_sample_name=HCC2218_normal
-                    m = re.search("tumor_sample_name=([^\s]+)", clopts)
+                    m = re.search(r"tumor_sample_name=([^\s]+)", clopts)
                     if m:
                         tsn = m.group(1)
                         for i, x in enumerate(samples):
                             if x == tsn:
                                 t_sample = "S.%i." % (i+1)
                                 break
-                    m = re.search("normal_sample_name=([^\s]+)", clopts)
+                    m = re.search(r"normal_sample_name=([^\s]+)", clopts)
                     if m:
                         nsn = m.group(1)
                         for i, x in enumerate(samples):
@@ -252,7 +254,7 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
                                 break
 
         except:
-            logging.warn("Unable to detect tumour / normal sample order from VCF header")
+            logging.warning("Unable to detect tumour / normal sample order from VCF header")
 
         logging.info("Normal sample name : %s (prefix %s) / tumour sample name : %s (prefix %s)" % (nsn, n_sample,
                                                                                                     tsn, t_sample))
@@ -277,7 +279,7 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = "."
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
 
             # fix missing features
@@ -291,14 +293,14 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
                 if not q in rec or rec[q] is None:
                     rec[q] = 0
                     if not ("feat:" + q) in has_warned:
-                        logging.warn("Missing feature %s" % q)
+                        logging.warning("Missing feature %s" % q)
                         has_warned["feat:" + q] = True
                 else:
                     # list features
                     if q.endswith("AD") or q.endswith("QSS") or q.endswith("RPA"):
                         if type(rec[q]) is not list:
                             if not q + "_PARSE_FAIL" in has_warned:
-                                logging.warn("Cannot parse %s: %s" % (q, str(rec[q])))
+                                logging.warning("Cannot parse %s: %s" % (q, str(rec[q])))
                                 has_warned[q + "_PARSE_FAIL"] = True
                                 rec[q] = [0] * (1 + len(rec["ALT"]))
 
@@ -331,10 +333,10 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
                     n_DP_ratio      = n_DP/float(avg_depth[rec["CHROM"]])
                     t_DP_ratio      = t_DP/float(avg_depth[rec["CHROM"]])
                 elif not rec["CHROM"] in has_warned:
-                    logging.warn("Cannot normalize depths on %s" % rec["CHROM"])
+                    logging.warning("Cannot normalize depths on %s" % rec["CHROM"])
                     has_warned[rec["CHROM"]] = True
             elif not "DPnorm" in has_warned:
-                logging.warn("Cannot normalize depths.")
+                logging.warning("Cannot normalize depths.")
                 has_warned["DPnorm"] = True
 
             n_allele_ref_count = rec[n_sample + "AD"][0]
@@ -344,7 +346,7 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
                 n_allele_alt_count = 0
             else:
                 n_allele_alt_count = 0
-                for a in xrange(0, len(alleles_alt)):
+                for a in range(0, len(alleles_alt)):
                     n_allele_alt_count += float(rec[n_sample + "AD"][a + 1])
 
             if n_allele_alt_count + n_allele_ref_count == 0:
@@ -359,7 +361,7 @@ def extractMutectIndelFeatures(vcfname, tag, avg_depth=None):
                 t_allele_alt_count = 0
             else:
                 t_allele_alt_count = 0
-                for a in xrange(0, len(alleles_alt)):
+                for a in range(0, len(alleles_alt)):
                     t_allele_alt_count += float(rec[t_sample + "AD"][a + 1])
 
             if t_allele_alt_count + t_allele_ref_count == 0:

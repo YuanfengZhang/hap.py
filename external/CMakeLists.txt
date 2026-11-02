@@ -1,5 +1,3 @@
+# JsonCpp comes from the dependency prefix, not the historical bundled copy.
 add_subdirectory(klib)
-add_subdirectory(jsoncpp)
-
-set (KLIB_LIBRARY klib PARENT_SCOPE)
-set (JSONCPP_LIBRARY jsoncpp PARENT_SCOPE)
+set(KLIB_LIBRARY klib PARENT_SCOPE)

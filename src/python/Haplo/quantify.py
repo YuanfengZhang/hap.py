@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -20,7 +22,7 @@ import copy
 import json
 import logging
 import Tools
-import pipes
+import shlex
 
 from Tools.bcftools import runBcftools
 
@@ -53,17 +55,17 @@ def _locations_tmp_bed_file(locations):
 
     locations = sorted(llocations)
 
-    tf = tempfile.NamedTemporaryFile(delete=False)
+    tf = tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False)
     for xchr, start, end in locations:
-        print >> tf, "%s\t%i\t%i" % (xchr, start - 1, end)
+        print("%s\t%i\t%i" % (xchr, start - 1, end), file=tf)
     tf.close()
 
     return tf.name
 
 
-def run_quantify(filename,
+def run_quantify(filename: str,
                  output_file=None, write_vcf=False, regions=None,
-                 reference=Tools.defaultReference(),
+                 reference=None,
                  locations=None, threads=1,
                  output_vtc=False,
                  output_rocs=False,
@@ -75,8 +77,8 @@ def run_quantify(filename,
                  roc_delta=None,
                  roc_regions=None,
                  clean_info=True,
-                 strat_fixchr=False):
-    """Run quantify and return parsed JSON
+                 strat_fixchr: bool = False) -> None:
+    """Run native quantification and write the requested reports
 
     :param filename: the VCF file name
     :param output_file: output file name (if None, will use a temp file)
@@ -95,74 +97,42 @@ def run_quantify(filename,
     :param roc_regions: List of regions to output full ROCs for
     :param clean_info: remove unused INFO fields
     :param strat_fixchr: fix chr naming in stratification regions
-    :returns: parsed counts JSON
+    :returns: None
     """
+
+    reference = Tools.defaultReference(reference)
+    if reference is None:
+        raise ValueError("Quantification requires a reference FASTA (-r or HGREF).")
 
     if not output_file:
         output_file = tempfile.NamedTemporaryFile().name
 
-    run_str = "quantify %s -o %s" % (
-            pipes.quote(filename),
-            pipes.quote(output_file))
-    run_str += " -r %s" % pipes.quote(reference)
-    run_str += " --threads %i" % threads
-
-    if output_vtc:
-        run_str += " --output-vtc 1"
-    else:
-        run_str += " --output-vtc 0"
-
-    if output_rocs:
-        run_str += " --output-rocs 1"
-    else:
-        run_str += " --output-rocs 0"
-
-    if qtype:
-        run_str += " --type %s" % qtype
-
-    if roc_file:
-        run_str += " --output-roc %s" % pipes.quote(roc_file)
-
-    if roc_val:
-        run_str += " --qq %s" % pipes.quote(roc_val)
-        if roc_header != roc_val:
-            # for xcmp, we extract the QQ value into the IQQ INFO field
-            # we pass the original name along here
-            run_str += " --qq-header %s" % pipes.quote(roc_header)
-
-    if roc_filter:
-        run_str += " --roc-filter '%s'" % pipes.quote(roc_filter)
-
+    command: list[str] = ['quantify', filename, '-o', output_file,
+                          '-r', reference, '--threads', str(threads),
+                          '--output-vtc', str(int(bool(output_vtc))),
+                          '--output-rocs', str(int(bool(output_rocs))),
+                          '--clean-info', str(int(bool(clean_info))),
+                          '--fix-chr-regions', str(int(bool(strat_fixchr)))]
+    for option, value in (('--type', qtype), ('--output-roc', roc_file),
+                          ('--qq', roc_val), ('--roc-filter', roc_filter)):
+        if value:
+            command.extend((option, value))
+    if roc_val and roc_header != roc_val:
+        command.extend(('--qq-header', roc_header))
     if roc_delta:
-        run_str += " --roc-delta %f" % roc_delta
-
-    if clean_info:
-        run_str += " --clean-info 1"
-    else:
-        run_str += " --clean-info 0"
-
-    if strat_fixchr:
-        run_str += " --fix-chr-regions 1"
-    else:
-        run_str += " --fix-chr-regions 0"
-
+        command.extend(('--roc-delta', '%f' % roc_delta))
     if write_vcf:
-        if not write_vcf.endswith(".vcf.gz") and not write_vcf.endswith(".bcf"):
-            write_vcf += ".vcf.gz"
-        run_str += " -v %s" % pipes.quote(write_vcf)
-
-    if regions:
-        for k, v in regions.iteritems():
-            run_str += " -R '%s:%s'" % (k, v)
-
-    if roc_regions:
-        for r in roc_regions:
-            run_str += " --roc-regions '%s'" % r
-
+        if not write_vcf.endswith(('.vcf.gz', '.bcf')):
+            write_vcf += '.vcf.gz'
+        command.extend(('-v', write_vcf))
+    for name, path in (regions or {}).items():
+        command.extend(('-R', name + ':' + path))
+    for region in roc_regions or ():
+        command.extend(('--roc-regions', region))
     location_file = None
     if locations:
         location_file = _locations_tmp_bed_file(locations)
-        run_str += " --only '%s'" % location_file
+        command.extend(('--only', location_file))
 
     tfe = tempfile.NamedTemporaryFile(delete=False,
                                       prefix="stderr",
@@ -171,10 +141,10 @@ def run_quantify(filename,
                                       prefix="stdout",
                                       suffix=".log")
 
-    logging.info("Running '%s'" % run_str)
+    logging.info('Running %s', shlex.join(command))
 
     try:
-        subprocess.check_call(run_str, shell=True, stdout=tfo, stderr=tfe)
+        subprocess.check_call(command, stdout=tfo, stderr=tfe)
     except:
         tfo.close()
         tfe.close()
@@ -206,8 +176,8 @@ def run_quantify(filename,
     if write_vcf and write_vcf.endswith(".bcf"):
         runBcftools("index", write_vcf)
     elif write_vcf:
-        to_run = "tabix -p vcf %s" % pipes.quote(write_vcf)
-        logging.info("Running '%s'" % to_run)
-        subprocess.check_call(to_run, shell=True)
+        command = ['tabix', '-p', 'vcf', write_vcf]
+        logging.info('Running %s', shlex.join(command))
+        subprocess.check_call(command)
 
 

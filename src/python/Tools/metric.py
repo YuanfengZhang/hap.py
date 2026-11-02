@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -14,6 +16,7 @@ import sys
 import pandas
 import time
 import math
+import numpy as np
 
 import Tools
 
@@ -47,15 +50,15 @@ def dataframeToMetricsTable(table_id, df):
     for header in list(df):
         c = str(df[header].dtype)
         ccast = str
-        if c in ["int32", "int64"]:
-            coltype = c
+        if pandas.api.types.is_integer_dtype(df[header].dtype):
+            coltype = 'int32' if c.lower() == 'int32' else 'int64'
             ccast = int
-        elif c.startswith("float"):
+        elif pandas.api.types.is_float_dtype(df[header].dtype):
             coltype = "double"
             ccast = float
         else:
             coltype = "string"
-        ldict = {'id': header, "label": header, "type": coltype, "values": list(map(ccast, df[header].values))}
+        ldict = {'id': header, "label": header, "type": coltype, "values": [None if pandas.isna(value) else ccast(value) for value in df[header].values]}
         mdict["data"].append(ldict)
 
     return replaceNaNs(mdict)
@@ -110,14 +113,16 @@ def replaceNaNs(xobject):
     :return: object, fixed
     """
 
+    if xobject is pandas.NA:
+        return None
+    if isinstance(xobject, np.generic):
+        xobject = xobject.item()
     if type(xobject) is dict:
-        for k in xobject.keys():
-            if type(xobject[k]) is dict or type(xobject[k]) is list or type(xobject[k]) is float:
-                xobject[k] = replaceNaNs(xobject[k])
+        for k in list(xobject.keys()):
+            xobject[k] = replaceNaNs(xobject[k])
     elif type(xobject) is list:
-        for k in xrange(0, len(xobject)):
-            if type(xobject[k]) is dict or type(xobject[k]) is list or type(xobject[k]) is float:
-                xobject[k] = replaceNaNs(xobject[k])
+        for k in range(0, len(xobject)):
+            xobject[k] = replaceNaNs(xobject[k])
     elif type(xobject) is float:
         # NaN and Inf become null. Not elegant, a JavaScript-y solution would be
         # to put these in as strings

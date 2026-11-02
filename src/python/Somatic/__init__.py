@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -14,16 +16,19 @@ import pandas
 
 from Tools.vcfextract import vcfExtract
 
-from Strelka import extractStrelkaSNVFeatures, extractStrelkaIndelFeatures
-from Mutect import extractMutectSNVFeatures, extractMutectIndelFeatures
-from Varscan2 import extractVarscan2SNVFeatures, extractVarscan2IndelFeatures
-from Pisces import extractPiscesSNVFeatures, extractPiscesIndelFeatures
+from .Strelka import extractStrelkaSNVFeatures, extractStrelkaIndelFeatures
+from .Mutect import extractMutectSNVFeatures, extractMutectIndelFeatures
+from .Varscan2 import extractVarscan2SNVFeatures, extractVarscan2IndelFeatures
+from .Pisces import extractPiscesSNVFeatures, extractPiscesIndelFeatures
 
 
-class FeatureSet(object):
+def format_feature_value(value: object) -> object:
+    """Normalize list-valued VCF features without changing scalar values."""
+    return ','.join(map(str, value)) if type(value) is list else value
+
+
+class FeatureSet(object, metaclass=abc.ABCMeta):
     """ VCF paired Feature set for somatic comparison """
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self):
         self.chr_depth = {}
@@ -60,11 +65,8 @@ class GenericFeatures(FeatureSet):
 
     @staticmethod
     def processValue(t):
-        _, val = t
-        if type(val) is list:
-            return ",".join(map(str, val))
-        else:
-            return val
+        _, value = t
+        return format_feature_value(value)
 
     @staticmethod
     def collectFeatures(vcfname, tag, features, processor=None):
@@ -95,10 +97,8 @@ class StrelkaAdmixSNVFeatures(FeatureSet):
 
     @staticmethod
     def processValue(t):
-        n, val = t
-        if type(val) is list:
-            return ",".join(map(str, val))
-        return val
+        _, value = t
+        return format_feature_value(value)
 
 
     def collect(self, vcfname, tag):
@@ -119,15 +119,12 @@ class StrelkaAdmixIndelFeatures(StrelkaAdmixSNVFeatures):
     def processValue(t):
         n, val = t
         if n == "I.SGT":
-            try:
-                if val == "ref->het":
-                    val = "het"
-                elif val == "ref->hom":
-                    val = "loh"
-                else:
-                    val = "unknown"
-            except:
-                val = "unknown"
+            if val == 'ref->het':
+                val = 'het'
+            elif val == 'ref->hom':
+                val = 'loh'
+            else:
+                val = 'unknown'
         else:
             if type(val) is list:
                 return ",".join(map(str, val))

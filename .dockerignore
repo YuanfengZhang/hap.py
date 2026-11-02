@@ -28,3 +28,25 @@ tags_sorted_by_file
 cmake-build-debug
 cmake-build-release
 build
+
+.work
+.pixi
+.git
+.claude
+resources
+issues
+CLAUDE.md
+__pycache__
+*.log
+
+# Publication excludes local metadata and delivery artifacts
+AGENTS.md
+.env
+.env.*
+.tmp
+.cache
+.pytest_cache
+*.sha256
+*.sha256.*
+*.sif
+hap.py-py3*.tar*

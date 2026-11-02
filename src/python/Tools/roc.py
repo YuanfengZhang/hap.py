@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -70,10 +72,8 @@ def tableROC(tbl, label_column, feature_column, filter_column=None,
             pass
 
 
-class ROC(object):
+class ROC(object, metaclass=abc.ABCMeta):
     """ROC calculator base class"""
-
-    __metaclass__ = abc.ABCMeta
 
     classes = {}
 
@@ -111,7 +111,7 @@ class ROC(object):
 
     @classmethod
     def list(cls):
-        return cls.classes.keys()
+        return list(cls.classes.keys())
 
 
 class StrelkaSNVRoc(ROC):

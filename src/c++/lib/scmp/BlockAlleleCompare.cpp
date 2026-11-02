@@ -295,12 +295,27 @@ namespace variant {
             }
             current_chr = vchr;
 
-            auto makeRefVar = [this, &vchr, &v](int allele) -> RefVar
+            const bool distance_mode = _impl->comparison_mode == DISTANCE;
+            const int64_t match_distance = distance_mode ? _impl->comparison_parameters["max_distance"].asInt() : 0;
+            if(distance_mode && current_block_end >= 0 && v->pos - 1 > current_block_end
+               && v->pos - 1 - current_block_end > match_distance)
+            {
+                compare_and_update();
+                current_block_end = -1;
+            }
+
+            auto makeRefVar = [this, &vchr, &v, distance_mode](int allele) -> RefVar
             {
                 assert(allele < v->n_allele);
                 RefVar rv;
                 rv.start = v->pos;
                 rv.alt = v->d.allele[allele];
+                if(!distance_mode && (rv.alt.empty() || rv.alt[0] == '<' || rv.alt == "*"
+                   || rv.alt.find_first_of("[]") != std::string::npos))
+                {
+                    error("unsupported non-sequence ALT for allele matching at %s:%lld : %s",
+                          vchr.c_str(), static_cast<long long>(v->pos + 1), rv.alt.c_str());
+                }
                 if(rv.alt == "<DEL>")
                 {
                     rv.alt = "";
@@ -309,7 +324,8 @@ namespace variant {
                 {
                     error("unsupported symbolic ALT at %s:%i : %S", vchr.c_str(), v->pos, rv.alt.c_str());
                 }
-                rv.end = rv.start + rv.alt.size() - 1;
+                const auto span = distance_mode ? rv.alt.size() : std::string(v->d.allele[0]).size();
+                rv.end = rv.start + static_cast<int64_t>(span) - 1;
                 return rv;
             };
 
@@ -318,7 +334,9 @@ namespace variant {
             {
                 if(gt[igt] > 0)
                 {
-                    truth_alleles.push_back(std::make_pair(makeRefVar(gt[igt]), v.get()));
+                    const auto allele = makeRefVar(gt[igt]);
+                    truth_alleles.push_back(std::make_pair(allele, v.get()));
+                    if(distance_mode) current_block_end = std::max(current_block_end, std::max(allele.start, allele.end));
                 }
             }
 
@@ -327,7 +345,9 @@ namespace variant {
             {
                 if(gt[igt] > 0)
                 {
-                    query_alleles.push_back(std::make_pair(makeRefVar(gt[igt]), v.get()));
+                    const auto allele = makeRefVar(gt[igt]);
+                    query_alleles.push_back(std::make_pair(allele, v.get()));
+                    if(distance_mode) current_block_end = std::max(current_block_end, std::max(allele.start, allele.end));
                 }
             }
 
@@ -348,8 +368,13 @@ namespace variant {
             }
             bcfhelpers::setFormatFloats(_impl->hdr.get(), v.get(), "QQ", QQ);
 
-            if(  (current_block_end >= 0 && v->pos > current_block_end + 100000)
-               || truth_alleles.size() + query_alleles.size() > 1024)
+            if(distance_mode && truth_alleles.size() + query_alleles.size() > 1000000)
+            {
+                error("Distance matching component exceeds 1000000 alleles at %s:%lld",
+                      vchr.c_str(), static_cast<long long>(v->pos + 1));
+            }
+            if(!distance_mode && ((current_block_end >= 0 && v->pos > current_block_end + 100000)
+               || truth_alleles.size() + query_alleles.size() > 1024))
             {
                 compare_and_update();
                 current_block_end = -1;

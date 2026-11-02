@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Compare som.py stats.csv and hap.py extended.csv files
 
@@ -30,17 +31,17 @@ def parse_sompy_stats(path):
     result = dict()
     for s in sompy_stats:
         subset = s["type"]
-        if re.match("indels.", subset):
+        if re.match(r"indels.", subset):
             # store results per af_bin
-            m = re.findall("indels.(\d+\.\d+)-(\d+\.\d+)", subset)[0]
+            m = re.findall(r"indels.(\d+\.\d+)-(\d+\.\d+)", subset)[0]
             af_low = m[0][:4]
             af_high = m[1][:4]
             af_bin = "[%s,%s]" % (af_low, af_high) if af_low == "1.00" else "[%s,%s)" % (af_low, af_high)
             result["INDEL." + af_bin] = s
 
-        if re.match("SNVs.", subset):
+        if re.match(r"SNVs.", subset):
             # store results per af_bin
-            m = re.findall("SNVs.(\d+\.\d+)-(\d+\.\d+)", subset)[0]
+            m = re.findall(r"SNVs.(\d+\.\d+)-(\d+\.\d+)", subset)[0]
             af_low = m[0][:4]
             af_high = m[1][:4]
             af_bin = "[%s,%s]" % (af_low, af_high) if af_low == "1.00" else "[%s,%s)" % (af_low, af_high)
@@ -60,7 +61,7 @@ if __name__ == '__main__':
         try:
             s = sompy_stats[k]
         except KeyError:
-            s = {"total.truth": 0, "tp": 0, "fn": 0, "total.query": 0, "fp": 0, "unk": 0}
+            s = {"total.truth": 0, "tp": 0, "fn": 0, "total.query": 0, "fp": 0, "unk": 0, "ambi": 0}
 
         outcomes[h["Filter"]].add(eval_equal(metric_name="%s %s TRUTH.TOTAL" % (k, h["Filter"]), count_a=s["total.truth"], count_b=h["TRUTH.TOTAL"]))
         outcomes[h["Filter"]].add(eval_equal(metric_name="%s %s TRUTH.TP" % (k, h["Filter"]), count_a=s["tp"], count_b=h["TRUTH.TP"]))
@@ -70,7 +71,7 @@ if __name__ == '__main__':
         outcomes[h["Filter"]].add(eval_equal(metric_name="%s %s QUERY.UNK" % (k, h["Filter"]), count_a=int(s["unk"])+int(s["ambi"]), count_b=h["QUERY.UNK"]))
 
     failed_vfilters = [x for x in outcomes if "FAIL" in outcomes[x]]
-    if len(failed_vfilters) == 2:
+    if not any(values == {"PASS"} for values in outcomes.values()):
         logging.info("Failed filters: %s" % failed_vfilters)
         sys.exit(1)
     else:

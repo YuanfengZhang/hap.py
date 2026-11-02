@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -55,7 +57,7 @@ def extractStrelkaSNVFeatures(vcfname, tag, avg_depth=None):
                     cols.append("E." + n)
                     logging.info("Scoring feature %i : %s" % (i, n))
             except:
-                logging.warn("Could not parse scoring feature names from Strelka output")
+                logging.warning("Could not parse scoring feature names from Strelka output")
 
     records = []
 
@@ -110,7 +112,7 @@ def extractStrelkaSNVFeatures(vcfname, tag, avg_depth=None):
             if q not in rec or rec[q] is None:
                 rec[q] = 0
                 if not ("feat:" + q) in has_warned:
-                    logging.warn("Missing feature %s" % q)
+                    logging.warning("Missing feature %s" % q)
                     has_warned["feat:" + q] = True
 
         rec["tag"] = tag
@@ -151,16 +153,16 @@ def extractStrelkaSNVFeatures(vcfname, tag, avg_depth=None):
                 t_DP_ratio = t_DP / float(avg_depth[rec["CHROM"]])
             except:
                 if not rec["CHROM"] in has_warned:
-                    logging.warn("Cannot normalize depths on %s" % rec["CHROM"])
+                    logging.warning("Cannot normalize depths on %s" % rec["CHROM"])
                     has_warned[rec["CHROM"]] = True
         elif "DPnorm" not in has_warned:
-            logging.warn("Cannot normalize depths.")
+            logging.warning("Cannot normalize depths.")
             has_warned["DPnorm"] = True
 
         # Ref and alt allele counts for tier1 and tier2
         allele_ref = rec["REF"]
         try:
-            t_allele_ref_counts = map(float, rec['S.2.' + allele_ref + 'U'])
+            t_allele_ref_counts = list(map(float, rec['S.2.' + allele_ref + 'U']))
         except:
             t_allele_ref_counts = [0, 0]
 
@@ -181,7 +183,7 @@ def extractStrelkaSNVFeatures(vcfname, tag, avg_depth=None):
             t_tier1_allele_rate = t_allele_alt_counts[0] / float(t_allele_alt_counts[0] + t_allele_ref_counts[0])
 
         try:
-            n_allele_ref_counts = map(float, rec['S.1.' + allele_ref + 'U'])
+            n_allele_ref_counts = list(map(float, rec['S.1.' + allele_ref + 'U']))
         except:
             n_allele_ref_counts = [0, 0]
 
@@ -250,7 +252,7 @@ def extractStrelkaSNVFeatures(vcfname, tag, avg_depth=None):
                         pass
         except:
             pass
-        for k, v in evs_featurenames.iteritems():
+        for k, v in evs_featurenames.items():
             if not "E." + v in qrec:
                 qrec["E." + v] = 0
 
@@ -330,7 +332,7 @@ def extractStrelkaIndelFeatures(vcfname, tag, avg_depth=None):
                     cols.append("E." + n)
                     logging.info("Scoring feature %i : %s" % (i, n))
             except:
-                logging.warn("Could not parse scoring feature names from Strelka output")
+                logging.warning("Could not parse scoring feature names from Strelka output")
 
     if not avg_depth:
         avg_depth = {}
@@ -372,7 +374,7 @@ def extractStrelkaIndelFeatures(vcfname, tag, avg_depth=None):
             if q not in rec or rec[q] is None:
                 rec[q] = 0
                 if not ("feat:" + q) in has_warned:
-                    logging.warn("Missing feature %s" % q)
+                    logging.warning("Missing feature %s" % q)
                     has_warned["feat:" + q] = True
 
         for q in ["S.1.TAR", "S.2.TAR",
@@ -381,7 +383,7 @@ def extractStrelkaIndelFeatures(vcfname, tag, avg_depth=None):
             if q not in rec or rec[q] is None:
                 rec[q] = [0, 0]
                 if not ("feat:" + q) in has_warned:
-                    logging.warn("Missing feature %s" % q)
+                    logging.warning("Missing feature %s" % q)
                     has_warned["feat:" + q] = True
 
         NT = rec["I.NT"]
@@ -415,10 +417,10 @@ def extractStrelkaIndelFeatures(vcfname, tag, avg_depth=None):
                 t_DP_ratio = t_DP / float(avg_depth[rec["CHROM"]])
             except:
                 if not rec["CHROM"] in has_warned:
-                    logging.warn("Cannot normalize depths on %s" % rec["CHROM"])
+                    logging.warning("Cannot normalize depths on %s" % rec["CHROM"])
                     has_warned[rec["CHROM"]] = True
         elif "DPnorm" not in has_warned:
-            logging.warn("Cannot normalize depths.")
+            logging.warning("Cannot normalize depths.")
             has_warned["DPnorm"] = True
 
         # extract observed AF from strelka counts. TIR = ALT; TAR = REF
@@ -493,7 +495,7 @@ def extractStrelkaIndelFeatures(vcfname, tag, avg_depth=None):
         except:
             pass
 
-        for k, v in evs_featurenames.iteritems():
+        for k, v in evs_featurenames.items():
             if not "E." + v in qrec:
                 qrec["E." + v] = 0
 

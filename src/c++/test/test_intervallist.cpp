@@ -281,3 +281,42 @@ BOOST_AUTO_TEST_CASE(testIntervalListRandom)
     }
 
 }
+
+BOOST_AUTO_TEST_CASE(intervalAdjacencyOrderInvariant)
+{
+    std::vector<int> order{0, 1, 2};
+    do
+    {
+        IntervalList<> intervals;
+        for (int i : order) intervals.add(interval(i * 5, i * 5 + 4));
+        std::list<interval> result;
+        intervals.get(0, 14, result);
+        BOOST_REQUIRE_EQUAL(result.size(), 1);
+        BOOST_CHECK_EQUAL(result.front().start, 0);
+        BOOST_CHECK_EQUAL(result.front().end, 14);
+    } while (std::next_permutation(order.begin(), order.end()));
+    IntervalList<> gap;
+    gap.add(interval(6, 9));
+    gap.add(interval(0, 4));
+    std::list<interval> separated;
+    gap.get(0, 9, separated);
+    BOOST_CHECK_EQUAL(separated.size(), 2);
+}
+
+BOOST_AUTO_TEST_CASE(intervalAdjacencyMaximumCoordinate)
+{
+    const int64_t maximum = std::numeric_limits<int64_t>::max();
+    for (bool reverse : {false, true})
+    {
+        IntervalList<> intervals;
+        const interval left(maximum - 3, maximum - 2);
+        const interval right(maximum - 1, maximum);
+        intervals.add(reverse ? right : left);
+        intervals.add(reverse ? left : right);
+        std::list<interval> result;
+        intervals.get(maximum - 3, maximum, result);
+        BOOST_REQUIRE_EQUAL(result.size(), 1);
+        BOOST_CHECK_EQUAL(result.front().start, maximum - 3);
+        BOOST_CHECK_EQUAL(result.front().end, maximum);
+    }
+}

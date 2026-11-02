@@ -36,6 +36,8 @@
 #define HAPLOTYPES_ROC_HH
 
 #include <memory>
+#include <cstdint>
+#include <type_traits>
 #include <vector>
 
 namespace roc
@@ -171,8 +173,8 @@ namespace roc
         /** relative precision of query */
         double precision() const
         {
-            const uint64_t total_query = totalQuery();
-            return (total_query == 0) ? 0 : static_cast<double>(tp2()) / (tp2() + fp());
+            const uint64_t assessed_query = tp2() + fp();
+            return (assessed_query == 0) ? 0 : static_cast<double>(tp2()) / assessed_query;
         }
 
         /** fraction of query calls that are UNK */
@@ -187,7 +189,7 @@ namespace roc
         {
             const double p = precision();
             const double r = recall();
-            return 2.0 * p*r / (p + r);
+            return (p + r == 0) ? 0 : 2.0 * p*r / (p + r);
         }
     };
 

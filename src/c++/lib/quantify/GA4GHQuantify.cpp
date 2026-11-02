@@ -62,20 +62,20 @@ namespace variant
         {
             bcf_hdr_append(hdr, "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">");
         }
-        if(!bcf_hdr_get_hrec(hdr, BCF_HL_INFO, "ID", "BD", NULL))
+        if(!bcf_hdr_get_hrec(hdr, BCF_HL_FMT, "ID", "BD", NULL))
         {
             bcf_hdr_append(hdr, "##FORMAT=<ID=BD,Number=1,Type=String,Description=\"Decision for call (TP/FP/FN/N)\">");
         }
-        if(!bcf_hdr_get_hrec(hdr, BCF_HL_INFO, "ID", "BK", NULL))
+        if(!bcf_hdr_get_hrec(hdr, BCF_HL_FMT, "ID", "BK", NULL))
         {
             bcf_hdr_append(hdr,
                            "##FORMAT=<ID=BK,Number=1,Type=String,Description=\"Sub-type for decision (match/mismatch type)\">");
         }
-        if(!bcf_hdr_get_hrec(hdr, BCF_HL_INFO, "ID", "BI", NULL))
+        if(!bcf_hdr_get_hrec(hdr, BCF_HL_FMT, "ID", "BI", NULL))
         {
             bcf_hdr_append(hdr, "##FORMAT=<ID=BI,Number=1,Type=String,Description=\"Additional comparison information\">");
         }
-        if(!bcf_hdr_get_hrec(hdr, BCF_HL_INFO, "ID", "QQ", NULL))
+        if(!bcf_hdr_get_hrec(hdr, BCF_HL_FMT, "ID", "QQ", NULL))
         {
             bcf_hdr_append(hdr, "##FORMAT=<ID=QQ,Number=1,Type=Float,Description=\"Variant quality for ROC creation.\">");
         }

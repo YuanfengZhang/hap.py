@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -20,10 +23,8 @@ class BedIntervalTree(object):
         self.tree = defaultdict(IntervalTree)
         self.intCount = 0
 
-        def mkzero():
-            return int(0)
-        self.count_by_label = defaultdict(mkzero)
-        self.nt_count_by_label = defaultdict(mkzero)
+        self.count_by_label = defaultdict(int)
+        self.nt_count_by_label = defaultdict(int)
 
     def __str__(self):
         return str(self.intCount) + ' intervals'
@@ -76,7 +77,7 @@ class BedIntervalTree(object):
         if not chrom and label:
             return self.nt_count_by_label[label]
         elif not chrom and not label:
-            return sum([self.nt_count_by_label[x] for x in self.nt_count_by_label.keys()])
+            return sum([self.nt_count_by_label[x] for x in list(self.nt_count_by_label.keys())])
 
         total_length = 0
         for x in self.tree[chrom].find(start, end):
@@ -111,7 +112,7 @@ class BedIntervalTree(object):
 
         """
         if bed_file.endswith(".gz"):
-            bed = gzip.open(bed_file)
+            bed = gzip.open(bed_file, "rt", encoding="utf-8")
         else:
             bed = open(bed_file)
 
@@ -122,14 +123,17 @@ class BedIntervalTree(object):
         else:
             labeller = lambda e: ",".join(map(str, e[3:]))
 
-        for entry in bed:
-            # split comma / semicolon entries
-            fields = entry.replace(";", "\t").replace(",", "\t").strip().split("\t")
-            if fixchr:
-                fields[0] = "chr" + fields[0].replace("chr", "")
+        with bed:
+            for entry in bed:
+                if not entry.strip() or entry.startswith(('#', 'track', 'browser')):
+                    continue
+                # split comma / semicolon entries
+                fields = entry.replace(";", "\t").replace(",", "\t").strip().split("\t")
+                if fixchr:
+                    fields[0] = "chr" + fields[0].replace("chr", "")
 
-            # we've made sure.
-            # noinspection PyCallingNonCallable
-            label = labeller(fields)
+                # we've made sure.
+                # noinspection PyCallingNonCallable
+                label = labeller(fields)
 
-            self._addEntryToTree(fields, label)
+                self._addEntryToTree(fields, label)

@@ -314,8 +314,8 @@ int main(int argc, char* argv[]) {
         regions.load(rnames, fixchr);
 
         bcf_srs_t * reader = bcf_sr_init();
-        reader->require_index = 1;
-        reader->collapse = COLLAPSE_NONE;
+        bcf_sr_set_opt(reader, BCF_SR_REQUIRE_IDX);
+        bcf_sr_set_opt(reader, BCF_SR_PAIR_LOGIC, BCF_SR_PAIR_EXACT);
         reader->streaming = 0;
         if(!only_regions.empty()) {
             int result = bcf_sr_set_regions(reader, only_regions.c_str(), 1);
@@ -329,21 +329,17 @@ int main(int argc, char* argv[]) {
             error("Failed to open or file not indexed: %s\n", file.c_str());
         }
 
+        bool seek_available = true;
         if(!chr.empty())
         {
-            int success = 0;
             if(start < 0)
             {
-                success = bcf_sr_seek(reader, chr.c_str(), 0);
+                seek_available = bcfhelpers::seek(reader, chr.c_str(), 0);
             }
             else
             {
-                success = bcf_sr_seek(reader, chr.c_str(), start);
+                seek_available = bcfhelpers::seek(reader, chr.c_str(), start);
                 std::cerr << "starting at " << chr << ":" << start << "\n";
-            }
-            if(success < 0)
-            {
-                error("Cannot seek to %s:%i", chr.c_str(), start);
             }
         }
 
@@ -512,7 +508,7 @@ int main(int argc, char* argv[]) {
         int previous_bs = -1;
         while(nl)
         {
-            nl = bcf_sr_next_line(reader);
+            nl = seek_available ? bcf_sr_next_line(reader) : 0;
             if (nl <= 0)
             {
                 break;

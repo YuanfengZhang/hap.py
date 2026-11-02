@@ -196,11 +196,14 @@ namespace roc
                 // skip if required flags are not set
                 continue;
             }
+            // Store only observations strictly below this quality. Equal-quality
+            // observations form one atomic threshold, independent of insertion order.
+            if (target.empty() || target.back().level != x.level)
+            {
+                target.push_back(last);
+                target.back().level = x.level;
+            }
             last.addObs(x);
-            last.level = x.level;
-            // this is probably not the best way to do this, but it works
-            // because we print things to a text file in the end
-            target.push_back(last);
         }
 
         for(auto & x : target)
@@ -249,7 +252,8 @@ namespace roc
             {
                 const std::string cur = std::to_string(x.level);
                 const std::string prev = std::to_string(previous_level);
-                push_now = cur != prev;
+                push_now = is_first || cur != prev;
+                is_first = false;
             }
             else
             {

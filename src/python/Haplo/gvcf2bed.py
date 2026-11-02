@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -20,7 +22,7 @@ import copy
 import json
 import logging
 import Tools
-import pipes
+import shlex
 
 
 def gvcf2bed(vcf,
@@ -31,9 +33,9 @@ def gvcf2bed(vcf,
 
     tf = tempfile.NamedTemporaryFile(dir=scratch_prefix, suffix=".bed")
     tf.close()
-    cmdline = "gvcf2bed %s -r %s -o %s" % (pipes.quote(vcf), pipes.quote(ref), tf.name)
+    cmdline = "gvcf2bed %s -r %s -o %s" % (shlex.quote(vcf), shlex.quote(ref), shlex.quote(tf.name))
     if regions:
-        cmdline += " -T %s" % pipes.quote(regions)
+        cmdline += " -T %s" % shlex.quote(regions)
     logging.info("Running gvcf2bed: '%s'" % cmdline)
     subprocess.check_call(cmdline, shell=True)
     return tf.name

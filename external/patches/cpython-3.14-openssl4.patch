@@ -1,0 +1,34 @@
+--- a/Modules/_ssl.c
++++ b/Modules/_ssl.c
+@@ -3221,10 +3221,14 @@
+ #endif
+ #if (defined(TLS1_2_VERSION) && \
+         !defined(OPENSSL_NO_TLS1_2) && \
+-        !defined(OPENSSL_NO_TLS1_2_METHOD))
++        (!defined(OPENSSL_NO_TLS1_2_METHOD) || OPENSSL_VERSION_MAJOR >= 4))
+     case PY_SSL_VERSION_TLS1_2:
+         PY_SSL_DEPRECATED("ssl.PROTOCOL_TLSv1_2 is deprecated", 2, NULL);
++#if OPENSSL_VERSION_MAJOR >= 4
++        method = TLS_method();
++#else
+         method = TLSv1_2_method();
++#endif
+         break;
+ #endif
+     case PY_SSL_VERSION_TLS:
+@@ -3262,6 +3266,15 @@
+         return NULL;
+     }
+ 
++#if OPENSSL_VERSION_MAJOR >= 4
++    if (proto_version == PY_SSL_VERSION_TLS1_2 &&
++        (!SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION) ||
++         !SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION))) {
++        SSL_CTX_free(ctx);
++        PyErr_SetString(PyExc_ValueError, "TLS 1.2 is unsupported by this OpenSSL build");
++        return NULL;
++    }
++#endif
+     assert(type != NULL && type->tp_alloc != NULL);
+     self = (PySSLContext *) type->tp_alloc(type, 0);
+     if (self == NULL) {

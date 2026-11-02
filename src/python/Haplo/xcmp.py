@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -23,6 +25,7 @@ import logging
 import tempfile
 import time
 import subprocess
+import shlex
 
 
 def xcmpWrapper(location_str, args):
@@ -35,23 +38,13 @@ def xcmpWrapper(location_str, args):
                                      suffix=".bcf")
     tf.close()
 
-    to_run = "xcmp %s %s -l %s -o %s -r %s -f %i -n %i --expand-hapblocks %i " \
-             "--window %i --no-hapcmp %i --qq %s" % \
-             (args.vcf1.replace(" ", "\\ "),
-              args.vcf2.replace(" ", "\\ "),
-              location_str,
-              tf.name,
-              args.ref,
-              1 if args.pass_only else 0,  # -f == apply-filtering
-              args.max_enum,
-              args.hb_expand,
-              args.window,
-              1 if args.no_hc else 0,
-              args.roc if args.roc else "QUAL")
-
+    to_run = ['xcmp', args.vcf1, args.vcf2, '-l', location_str,
+              '-o', tf.name, '-r', args.ref, '-f', str(int(args.pass_only)),
+              '-n', str(args.max_enum), '--expand-hapblocks', str(args.hb_expand),
+              '--window', str(args.window), '--no-hapcmp', str(int(args.no_hc)),
+              '--qq', args.roc or 'QUAL']
     if args.verbose:
-        # this prints information on failed sites
-        to_run += " -e -"
+        to_run += ['-e', '-']
 
     # regions / targets already have been taken care of in blocksplit / preprocessing
 
@@ -66,7 +59,7 @@ def xcmpWrapper(location_str, args):
 
     try:
         logging.info("Running '%s'" % to_run)
-        subprocess.check_call(to_run, shell=True, stdout=tfo, stderr=tfe)
+        subprocess.check_call(to_run, stdout=tfo, stderr=tfe)
     finally:
         tfo.close()
         tfe.close()
@@ -76,7 +69,7 @@ def xcmpWrapper(location_str, args):
         os.unlink(tfo.name)
         with open(tfe.name) as f:
             for l in f:
-                logging.warn(l.replace("\n", ""))
+                logging.warning(l.replace("\n", ""))
         os.unlink(tfe.name)
 
     elapsed = time.time() - starttime

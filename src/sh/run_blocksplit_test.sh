@@ -62,3 +62,21 @@ else
 fi
 
 echo "Blocksplit test was successful"
+
+# Region/reader cleanup regression. Never remove the source fixture's index.
+REGRESSION_DIR=$(mktemp -d "${TMPDIR}/blocksplit-regions.XXXXXXXX")
+trap 'rm -rf "$REGRESSION_DIR"' EXIT
+FORMAT_VCF="${DIR}/../data/test_formats.vcf.gz"
+"${HCDIR}/blocksplit" "$FORMAT_VCF" -l chr1 -o "$REGRESSION_DIR/present.bed" 2> "$REGRESSION_DIR/present.stderr"
+test -s "$REGRESSION_DIR/present.bed"
+"${HCDIR}/blocksplit" "$FORMAT_VCF" -l absent_custom_contig -o "$REGRESSION_DIR/absent.bed" 2> "$REGRESSION_DIR/absent.stderr"
+test ! -s "$REGRESSION_DIR/absent.bed"
+cp "$FORMAT_VCF" "$REGRESSION_DIR/unindexed.vcf.gz"
+status=0
+"${HCDIR}/blocksplit" "$REGRESSION_DIR/unindexed.vcf.gz" -l chr1 -o "$REGRESSION_DIR/unindexed.bed" 2> "$REGRESSION_DIR/unindexed.stderr" || status=$?
+test "$status" -eq 1
+if grep -E 'AddressSanitizer|LeakSanitizer|UndefinedBehaviorSanitizer|runtime error:' "$REGRESSION_DIR/"*.stderr; then
+    echo "blocksplit region regression emitted a sanitizer error" >&2
+    exit 1
+fi
+echo "Blocksplit region and unindexed-input regressions passed"

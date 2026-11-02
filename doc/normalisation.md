@@ -266,3 +266,12 @@ chr1    100000  .   A    C,T,T  ...   GT  1/2  1/3
 chr1    100000  .   A    C,T  ...   GT  1/2  1/2
 ```
 
+
+## Complete-record deduplication
+
+After all normalization blocks have been concatenated, Python CLI preprocessing
+removes complete duplicate records by default (Issue #160). All columns and
+sample values participate in equality. Different genotypes, annotations or
+filters at the same allele are retained. `--keep-duplicates` skips this final
+step; it does not reverse any merging already performed by normalization.
+See [hap.py usage](happy.md#complete-duplicate-records-issue-160) for details.

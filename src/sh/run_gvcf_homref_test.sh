@@ -67,7 +67,10 @@ ${HCDIR}/multimerge ${DIR}/../../example/callsonly/call_merge.vcf.gz:* \
 					-o ${TF} -r ${DIR}/../../example/chr21.fa \
 					--process-full=1 --process-formats=1
 
-diff ${TF} ${DIR}/../../example/callsonly/expected_callsonly.vcf
+diff "${TF}" "${DIR}/../../example/callsonly/expected_callsonly.vcf" > "${TF}.legacy-header.diff"
+LEGACY_DIFF_STATUS=$?
+printf '%s\n' "${LEGACY_DIFF_STATUS}" > "${TF}.legacy-header.exit-code"
+"${PYTHON}" -I "${DIR}/compare_reference_vcf.py" "${TF}" "${DIR}/../../example/callsonly/expected_callsonly.vcf" "${DIR}/../../example/chr21.fa"
 
 if [ $? -ne 0 ]; then
 	echo "GVCF homref + Variants test FAILED. You can inspect ${TF} for the failed result. // diff ${TF} ${DIR}/../../example/callsonly/expected_callsonly.vcf"

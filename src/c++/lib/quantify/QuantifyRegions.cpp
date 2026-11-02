@@ -237,21 +237,14 @@ namespace variant
                         if (!fixed_label && v.size() > 3)
                         {
                             size_t split = v[3].size();
-                            for (size_t pos = v[3].size(); pos != 0; --pos)
+                            while (split > 0 && v[3][split - 1] >= '0' && v[3][split - 1] <= '9')
                             {
-                                if (v[3][pos] < '0' || v[3][pos] > '9')
-                                {
-                                    break;
-                                }
-                                else
-                                {
-                                    split = pos;
-                                }
+                                --split;
                             }
 
-                            if(split < v[3].size() && v[3][split] == '_')
+                            if(split > 1 && split < v[3].size() && v[3][split - 1] == '_')
                             {
-                                label_ids.insert(getLabelId(label + "_" + v[3].substr(0, split), 1));
+                                label_ids.insert(getLabelId(label + "_" + v[3].substr(0, split - 1), 1));
                                 label_ids.insert(getLabelId(label + "_" + v[3], 2));
                             }
                             else

@@ -1,0 +1,12 @@
+{
+  "parent_commit": "f411234a06597773c3842725c76561dfd64226c1",
+  "extraction_commit": "1366c81f2c6be6494a5a73277a5b4a799946f5ab",
+  "source_url": "https://raw.githubusercontent.com/samtools/htsjdk/f411234a06597773c3842725c76561dfd64226c1/src/java/org/broadinstitute/variant/variantcontext/VariantJEXLContext.java",
+  "source_sha256": "c5f676be18a323b4250c07341b411852c6d2789adb9ba3ac5666d2ec4b745c4d",
+  "scope": "Historical JEXLMap body is present under Broad Institute 2012 MIT header. Later modifications and current 6.0.0 file remain subject to separate review.",
+  "files": {
+    "VariantJEXLContext.java": "c5f676be18a323b4250c07341b411852c6d2789adb9ba3ac5666d2ec4b745c4d",
+    "LICENSE.MIT": "442deff585fb39bb8484357406158860823a562895e6398a73a631621a9ff011",
+    "extraction.patch": "4096c7cd1d445923733a9bf977c1bc31ca728db887e5e15170c00b79a7d1ba61"
+  }
+}

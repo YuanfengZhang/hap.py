@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -23,7 +25,7 @@ import tempfile
 import time
 import itertools
 import multiprocessing
-import pipes
+import shlex
 
 from Tools.parallel import runParallel, getPool
 from Tools.bcftools import runBcftools, concatenateParts
@@ -44,12 +46,12 @@ def preprocessWrapper(file_and_location, args):
     tf.close()
 
     to_run = "preprocess %s:* %s-o %s -V %i -L %i -r %s" % \
-             (pipes.quote(filename),
-              ("-l %s " % pipes.quote(location_str)) if location_str else "",
-              tf.name,
+             (shlex.quote(filename),
+              ("-l %s " % shlex.quote(location_str)) if location_str else "",
+              shlex.quote(tf.name),
               args["decompose"],
               args["leftshift"],
-              pipes.quote(args["reference"]))
+              shlex.quote(args["reference"]))
 
     if args["haploid_x"]:
         to_run += " --haploid-x 1"
@@ -75,7 +77,7 @@ def preprocessWrapper(file_and_location, args):
             os.unlink(tfo.name)
             with open(tfe.name) as f:
                 for l in f:
-                    logging.warn(l.replace("\n", ""))
+                    logging.warning(l.replace("\n", ""))
             os.unlink(tfe.name)
         else:
             logging.error("Preprocess command %s failed. Outputs are here %s / %s" % (to_run, tfo.name, tfe.name))
@@ -103,9 +105,9 @@ def blocksplitWrapper(location_str, bargs):
         tf.close()
 
         to_run = "blocksplit %s -l %s -o %s --window %i --nblocks %i -f 0" % \
-                 (pipes.quote(bargs["vcf"]),
-                  pipes.quote(location_str),
-                  tf.name,
+                 (shlex.quote(bargs["vcf"]),
+                  shlex.quote(location_str),
+                  shlex.quote(tf.name),
                   bargs["dist"],
                   bargs["pieces"])
 
@@ -127,7 +129,7 @@ def blocksplitWrapper(location_str, bargs):
             os.unlink(tfo.name)
             with open(tfe.name) as f:
                 for l in f:
-                    logging.warn(l.replace("\n", ""))
+                    logging.warning(l.replace("\n", ""))
             os.unlink(tfe.name)
 
         r = []
@@ -160,76 +162,81 @@ def partialCredit(vcfname,
     """ Partial-credit-process a VCF file according to our args """
 
     pool = getPool(int(threads))
-    if threads > 1:
-        logging.info("Partial credit processing uses %i parallel processes." % threads)
-
-        if not locations:
-            h = extractHeadersJSON(vcfname)
-            if not h["tabix"]["chromosomes"]:
-                logging.warn("Empty input or not tabix indexed")
-                if outputname.endswith(".bcf"):
-                    runBcftools("view", "-O", "b", "-o", outputname, vcfname)
-                    runBcftools("index", outputname)
-                else:
-                    runBcftools("view", "-O", "z", "-o", outputname, vcfname)
-                    runBcftools("index", "-t", outputname)
-                # just return the same file
-                return
-            locations = h["tabix"]["chromosomes"]
-        elif type(locations) is str or type(locations) is unicode:
-            locations = locations.split(",")
-
-        # use blocksplit to subdivide input
-        res = runParallel(pool,
-                          blocksplitWrapper,
-                          locations,
-                          {"vcf": vcfname,
-                           "dist": window,
-                           "pieces": min(40, threads*4)})
-
-        if None in res:
-            raise Exception("One of the blocksplit processes failed.")
-
-        locations = list(itertools.chain.from_iterable(res))
-        if not len(locations):
-            logging.warn("Blocksplit returned no blocks. This can happen when "
-                         "an input contains no valid variants.")
-            locations = [""]
-    else:
-        locations = [""]
-
-    res = []
     try:
-        res = runParallel(pool,
-                          preprocessWrapper,
-                          itertools.izip(itertools.repeat(vcfname), locations),
-                          {"reference": reference,
-                           "decompose": decompose,
-                           "leftshift": leftshift,
-                           "haploid_x": haploid_x,
-                           "bcf": outputname.endswith(".bcf")})
+        if threads > 1:
+            logging.info("Partial credit processing uses %i parallel processes." % threads)
 
-        if None in res:
-            raise Exception("One of the preprocess jobs failed")
-        if not res:
-            raise Exception("No blocks were processed. List of locations: %s" % str(list(locations)))
+            if not locations:
+                h = extractHeadersJSON(vcfname)
+                if not h["tabix"]["chromosomes"]:
+                    logging.warning("Empty input or not tabix indexed")
+                    if outputname.endswith(".bcf"):
+                        runBcftools("view", "-O", "b", "-o", outputname, vcfname)
+                        runBcftools("index", outputname)
+                    else:
+                        runBcftools("view", "-O", "z", "-o", outputname, vcfname)
+                        runBcftools("index", "-t", outputname)
+                    # just return the same file
+                    return
+                locations = h["tabix"]["chromosomes"]
+            elif type(locations) is str or type(locations) is str:
+                locations = locations.split(",")
 
-        concatenateParts(outputname, *res)
-        if outputname.endswith(".vcf.gz"):
-            runBcftools("index", "-f", "-t", outputname)
-        else:  # use bcf
-            runBcftools("index", "-f", outputname)
+            # use blocksplit to subdivide input
+            res = runParallel(pool,
+                              blocksplitWrapper,
+                              locations,
+                              {"vcf": vcfname,
+                               "dist": window,
+                               "pieces": min(40, threads*4)})
+
+            if None in res:
+                raise Exception("One of the blocksplit processes failed.")
+
+            locations = list(itertools.chain.from_iterable(res))
+            if not len(locations):
+                logging.warning("Blocksplit returned no blocks. This can happen when "
+                             "an input contains no valid variants.")
+                locations = [""]
+        else:
+            locations = [""]
+
+        res = []
+        try:
+            res = runParallel(pool,
+                              preprocessWrapper,
+                              zip(itertools.repeat(vcfname), locations),
+                              {"reference": reference,
+                               "decompose": decompose,
+                               "leftshift": leftshift,
+                               "haploid_x": haploid_x,
+                               "bcf": outputname.endswith(".bcf")})
+
+            if None in res:
+                raise Exception("One of the preprocess jobs failed")
+            if not res:
+                raise Exception("No blocks were processed. List of locations: %s" % str(list(locations)))
+
+            concatenateParts(outputname, *res)
+            if outputname.endswith(".vcf.gz"):
+                runBcftools("index", "-f", "-t", outputname)
+            else:  # use bcf
+                runBcftools("index", "-f", outputname)
+        finally:
+            for r in res:
+                try:
+                    os.unlink(r)
+                except:
+                    pass
+                try:
+                    os.unlink(r + ".tbi")
+                except:
+                    pass
+                try:
+                    os.unlink(r + ".csi")
+                except:
+                    pass
     finally:
-        for r in res:
-            try:
-                os.unlink(r)
-            except:
-                pass
-            try:
-                os.unlink(r + ".tbi")
-            except:
-                pass
-            try:
-                os.unlink(r + ".csi")
-            except:
-                pass
+        if pool is not None:
+            pool.terminate()
+            pool.join()

@@ -172,8 +172,8 @@ int main(int argc, char *argv[])
         }
 
         bcf_srs_t *reader = bcf_sr_init();
-        reader->collapse = COLLAPSE_NONE;
-        reader->require_index = 0;
+        bcf_sr_set_opt(reader, BCF_SR_PAIR_LOGIC, BCF_SR_PAIR_EXACT);
+        bcf_sr_set_opt(reader, BCF_SR_ALLOW_NO_IDX);
         reader->streaming = 1;
 
         if(!bcf_sr_add_reader(reader, input_vcf.c_str()))
@@ -193,9 +193,11 @@ int main(int argc, char *argv[])
         // rename the samples in the output header
         bcfhelpers::p_bcf_hdr output_header(bcfhelpers::ph(bcf_hdr_init("w")));
         {
-            int len = 0;
-            char *hdr_text = bcf_hdr_fmt_text(hdr, 0, &len);
-            if(!hdr_text)
+            kstring_t text = {0, 0, nullptr};
+            const int status = bcf_hdr_format(hdr, 0, &text);
+            char *hdr_text = text.s;
+            const size_t len = text.l;
+            if(status < 0 || !hdr_text)
             {
                 error("Failed to process input VCF header.");
             }

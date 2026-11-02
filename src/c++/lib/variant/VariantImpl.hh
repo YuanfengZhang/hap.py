@@ -76,8 +76,8 @@ struct VariantReaderImpl
     VariantReaderImpl()
     {
         files = bcf_sr_init();
-        files->require_index = 1;
-        files->collapse = COLLAPSE_NONE;
+        bcf_sr_set_opt(files, BCF_SR_REQUIRE_IDX);
+        bcf_sr_set_opt(files, BCF_SR_PAIR_LOGIC, BCF_SR_PAIR_EXACT);
         regions = "";
         targets = "";
         regionsFile = false;
@@ -86,6 +86,7 @@ struct VariantReaderImpl
         returnHomref = true;
         validateRef = false;
         fix_chrX = false;
+        seek_exhausted = false;
     }
 
     ~VariantReaderImpl()
@@ -122,12 +123,13 @@ struct VariantReaderImpl
     std::list<Variants> buffered_variants;
 
     bool fix_chrX;
+    bool seek_exhausted;
 };
 
 struct VariantWriterImpl
 {
     VariantWriterImpl(const char * fname, const char * refname) :
-        write_formats(false), filename(fname), referencename(refname),
+        write_formats(false), filename(fname), referencename(refname ? refname : ""),
         header_done(false), reference(refname)
     {
         const char * mode = "wu";
@@ -141,6 +143,9 @@ struct VariantWriterImpl
             mode = "wb";
         }
 
+        auto header = bcfhelpers::ph(bcf_hdr_init("w"));
+        bcfhelpers::bcfHeaderFromReference(header.get(), refname);
+
         if(strlen(fname) > 0 && fname[0] == '-')
         {
             fp = hts_open("-", mode);
@@ -150,8 +155,8 @@ struct VariantWriterImpl
             fp = hts_open(fname, mode);
         }
 
-        hdr = bcf_hdr_init("w");
-        bcfhelpers::bcfHeaderHG19(hdr);
+        if (!fp) error("Cannot open variant output: %s", fname);
+        hdr = bcf_hdr_dup(header.get());
         rec = bcf_init1();
     }
 

@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -33,8 +35,8 @@ class CallerInfo(object):
 
     def asDict(self):
         kvd = ["name", "version", "parameters"]
-        return {"aligners": [dict(y for y in itertools.izip(kvd, x)) for x in self.aligners],
-                "callers": [dict(y for y in itertools.izip(kvd, x)) for x in self.callers]}
+        return {"aligners": [dict(y for y in zip(kvd, x)) for x in self.aligners],
+                "callers": [dict(y for y in zip(kvd, x)) for x in self.callers]}
 
     def addVCF(self, vcfname):
         """ Add caller versions from a VCF
@@ -44,8 +46,8 @@ class CallerInfo(object):
         tf.close()
         vfh = {}
         try:
-            sp = subprocess.Popen("vcfhdr2json '%s' '%s'" % (vcfname, tf.name),
-                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            sp = subprocess.Popen(["vcfhdr2json", vcfname, tf.name],
+                shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
             o, e = sp.communicate()
 
             if sp.returncode != 0:
@@ -138,8 +140,8 @@ class CallerInfo(object):
         """ Extract aligner information from a BAM file
         :param bamfile: name of BAM file
         """
-        sp = subprocess.Popen("samtools view -H '%s'" % bamfile,
-                              shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        sp = subprocess.Popen(["samtools", "view", "-H", bamfile],
+                              shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8")
         o, e = sp.communicate()
 
         if sp.returncode != 0:
@@ -152,7 +154,7 @@ class CallerInfo(object):
                 # noinspection PyTypeChecker
                 x = dict(y.split(":", 1) for y in line.split("\t")[1:])
             except:
-                logging.warn("Unable to parse SAM/BAM header line: %s" % line)
+                logging.warning("Unable to parse SAM/BAM header line: %s" % line)
                 continue
             cp = ['unknown', 'unknown', '']
             try:

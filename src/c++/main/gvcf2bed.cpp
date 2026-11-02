@@ -147,9 +147,9 @@ int main(int argc, char *argv[])
         FastaFile ref_fasta(reference.c_str());
 
         bcf_srs_t *reader = bcf_sr_init();
-        reader->collapse = COLLAPSE_NONE;
-            reader->require_index = 0;
-            reader->streaming = 1;
+        bcf_sr_set_opt(reader, BCF_SR_PAIR_LOGIC, BCF_SR_PAIR_EXACT);
+        // Preserve streaming mode for the single reader.
+        reader->streaming = 1;
 
         if(!target.empty())
         {
@@ -371,12 +371,13 @@ int main(int argc, char *argv[])
                 }
             }
 
+
             if( current_interval.chr == vchr &&
                 refstart <= current_interval.end &&
                 refend >= current_interval.start)
             {
                 current_interval.start = std::min(refstart, current_interval.start);
-                current_interval.end = std::max(refstart, current_interval.end);
+                current_interval.end = std::max(refend, current_interval.end);
                 if(current_interval.extra.find(extra) == std::string::npos)
                 {
                     current_interval.extra += ";" + extra;
@@ -390,6 +391,11 @@ int main(int argc, char *argv[])
                 current_interval.end = refend;
                 current_interval.extra = extra;
             }
+        }
+
+        if (reader->errnum)
+        {
+            error("Failed to read %s: %s", file.c_str(), bcf_sr_strerror(reader->errnum));
         }
 
         current_interval.print(*output_stream);

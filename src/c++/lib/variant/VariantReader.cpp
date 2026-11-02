@@ -197,9 +197,9 @@ int VariantReader::addSample(const char * filename, const char * sname)
         }
         si.ireader = _impl->files->nreaders - 1;
         _impl->filename_mapping[filename] = si.ireader;
-        bcf_hdr_append(_impl->files->readers->header,
+        bcf_hdr_append(bcf_sr_get_header(_impl->files, si.ireader),
                        "##INFO=<ID=IMPORT_FAIL,Number=.,Type=Flag,Description=\"Flag to identify variants that could not be imported.\">");
-        bcf_hdr_sync(_impl->files->readers->header);
+        bcf_hdr_sync(bcf_sr_get_header(_impl->files, si.ireader));
     }
 
     if(sname && strlen(sname) > 0)
@@ -296,25 +296,8 @@ void VariantReader::setTargets(const char * targets, bool isFile)
  */
 void VariantReader::rewind(const char * chr, int64_t startpos)
 {
-    int returned = -1;
-
-    if(!chr || strcmp(chr, "") == 0)
-    {
-        chr = NULL;
-    }
-
-    if(startpos < 0)
-    {
-        returned = bcf_sr_seek(_impl->files, chr, 0);
-    }
-    else
-    {
-        returned = bcf_sr_seek(_impl->files, chr, (int) startpos);
-    }
-    if (returned == -_impl->files->nreaders)
-    {
-        error("Could not seek to: %s", stringutil::formatPos(chr, startpos).c_str());
-    }
+    if (!chr || !*chr) chr = nullptr;
+    _impl->seek_exhausted = !bcfhelpers::seek(_impl->files, chr, startpos);
     _impl->buffered_variants.clear();
 }
 
@@ -338,6 +321,7 @@ Variants & VariantReader::current()
 
 bool VariantReader::advance()
 {
+    if (_impl->seek_exhausted) return false;
     if (!_impl->buffered_variants.empty())
     {
         _impl->buffered_variants.pop_front();
@@ -351,6 +335,7 @@ bool VariantReader::advance()
     int nl = bcf_sr_next_line(_impl->files);
     if (nl <= 0)
     {
+        if (_impl->files->errnum) error("VCF/BCF read failed: %s", bcf_sr_strerror(_impl->files->errnum));
         return false;
     }
 
@@ -377,11 +362,11 @@ bool VariantReader::advance()
 
         if(vars.chr == "")
         {
-            vars.chr = reader.header->id[BCF_DT_CTG][line->rid].key;
+            vars.chr = bcf_hdr_id2name(reader.header, line->rid);
         }
         else
         {
-            std::string chr2 = reader.header->id[BCF_DT_CTG][line->rid].key;
+            std::string chr2 = bcf_hdr_id2name(reader.header, line->rid);
             if (vars.chr != chr2)
             {
                 error("Chromosome mismatch: %s != %s", vars.chr.c_str(), chr2.c_str());
@@ -660,11 +645,9 @@ bool VariantReader::advance()
                 // TODO warn or handle
                 continue;
             }
-            switch(inf->type)
+            switch(bcf_hdr_id2type(reader.header, BCF_HL_INFO, inf->key))
             {
-                case BCF_BT_INT8:
-                case BCF_BT_INT16:
-                case BCF_BT_INT32:
+                case BCF_HT_INT:
                 {
                     auto ints = bcfhelpers::getInfoInts(reader.header, line, id);
                     if(ints.size() == 1)
@@ -681,7 +664,7 @@ bool VariantReader::advance()
                     }
                     break;
                 }
-                case BCF_BT_FLOAT:
+                case BCF_HT_REAL:
                 {
                     auto floats = bcfhelpers::getInfoFloats(reader.header, line, id);
                     if (floats.size() == 1)
@@ -698,7 +681,7 @@ bool VariantReader::advance()
                     }
                     break;
                 }
-                case BCF_BT_CHAR:
+                case BCF_HT_STR:
                     vars.infos[id] = bcfhelpers::getInfoString(reader.header, line, id);
                     break;
                 default:
@@ -731,12 +714,11 @@ bool VariantReader::advance()
 
         vars.calls[sid].ngt = (size_t) ngt;
 
-        int adcount = std::max((int)(2*vars.calls.size()), int(vars.variation.size() + 1));
-        int * ad = new int[adcount];
-        memset(ad, -1, sizeof(int)*adcount);
+        int adcount = std::max(int(line->n_allele), std::max((int)(2*vars.calls.size()), int(vars.variation.size() + 1)));
+        std::vector<int> ad(adcount, -1);
 
         bcfhelpers::getAD(reader.header, line, isample,
-                          ad, adcount);
+                          ad.data(), adcount);
 
         vars.calls[sid].ad_ref = ad[0];
         vars.calls[sid].ad_other = 0;
@@ -761,7 +743,7 @@ bool VariantReader::advance()
             }
         }
 
-        delete [] ad;
+
 
 #ifdef DEBUG_VARIANT_GTS
         std::cerr << "\ts" << sid << ": ";

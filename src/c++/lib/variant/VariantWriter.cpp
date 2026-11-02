@@ -107,10 +107,13 @@ namespace variant
         for (int i = 0; i < vr._impl->files->nreaders; ++i)
         {
             std::vector<std::string> result;
-            int len = 0;
-            char * hdr_text = bcf_hdr_fmt_text(vr._impl->files->readers[i].header, 0, &len);
-            if(!hdr_text)
+            kstring_t text = {0, 0, nullptr};
+            const int status = bcf_hdr_format(bcf_sr_get_header(vr._impl->files, i), 0, &text);
+            char *hdr_text = text.s;
+            const size_t len = text.l;
+            if(status < 0 || !hdr_text)
             {
+                free(hdr_text);
                 continue;
             }
             stringutil::split(std::string(hdr_text, (unsigned long) len), result, "\n");
@@ -153,6 +156,13 @@ namespace variant
             if(!hrec)
             {
                 std::cerr << "[W] Failed to parse VCF header line: " << l << "\n";
+                continue;
+            }
+            // Output owns its version and reference dictionary; do not merge conflicting versions.
+            if (std::string(hrec->key) == "contig" || std::string(hrec->key) == "reference" ||
+                std::string(hrec->key) == "fileformat")
+            {
+                bcf_hrec_destroy(hrec);
                 continue;
             }
             int idx = bcf_hrec_find_key(hrec, "ID");
@@ -199,7 +209,7 @@ namespace variant
 
         bcf_hdr_add_sample(hdr, NULL);
         bcf_hdr_set_version(hdr, "VCFv4.1");
-        bcf_hdr_write(fp, hdr);
+        if (bcf_hdr_write(fp, hdr) < 0) error("Cannot write variant header: %s", filename.c_str());
         header_done = true;
     }
 
@@ -215,7 +225,8 @@ namespace variant
         bcf_clear(rec);
 
         rec->rid = bcf_hdr_name2id(hdr, var.chr.c_str());
-        rec->pos = (int32_t) var.pos;
+        if (rec->rid < 0) error("Output contig is absent from FASTA reference: %s", var.chr.c_str());
+        rec->pos = var.pos;
 
         /** make alleles */
         if(var.variation.size() > 0)
@@ -288,33 +299,32 @@ namespace variant
         bcf_update_filter(hdr, rec, fmap, fcount);
 
         // write GTs
-        int32_t *tmp = (int32_t*)malloc(bcf_hdr_nsamples(hdr)*MAX_GT*sizeof(int32_t));
-        memset(tmp, 0, sizeof(int32_t)*bcf_hdr_nsamples(hdr)*MAX_GT);
-
-        for(size_t g = 0; g < var.calls.size(); ++g)
+        const size_t samples = static_cast<size_t>(bcf_hdr_nsamples(hdr));
+        if (var.calls.size() > samples)
+            throw bcfhelpers::importexception("More genotype calls than output samples");
+        std::vector<int32_t> genotypes(samples * MAX_GT, bcf_int32_vector_end);
+        for (size_t g = 0; g < samples; ++g)
         {
-            Call const & c = var.calls[g];
-
-            // optionally write other formats
-            for (int j = 0; j < std::max(MAX_GT, (int ) var.calls[g].ngt); ++j)
+            genotypes[MAX_GT * g] = bcf_gt_missing;
+            // Calls with unknown ploidy retain the historical diploid no-call.
+            // Explicit haploid calls still terminate after their one allele.
+            if (g >= var.calls.size() || var.calls[g].ngt == 0)
             {
-                if(c.phased)
-                {
-                    tmp[j + MAX_GT*g] = bcf_gt_phased(c.gt[j]);
-                }
-                else
-                {
-                    tmp[j + MAX_GT*g] = bcf_gt_unphased(c.gt[j]);
-                }
+                for (size_t j = 1; j < MAX_GT; ++j)
+                    genotypes[MAX_GT * g + j] = bcf_gt_missing;
+                continue;
+            }
+            const Call &call = var.calls[g];
+            if (call.ngt > MAX_GT)
+                throw bcfhelpers::importexception("Output GT ploidy exceeds supported capacity");
+            for (size_t j = 0; j < call.ngt; ++j)
+            {
+                genotypes[j + MAX_GT * g] = call.phased && j > 0
+                    ? bcf_gt_phased(call.gt[j]) : bcf_gt_unphased(call.gt[j]);
             }
         }
-
-        if(bcf_update_genotypes(hdr, rec, tmp, bcf_hdr_nsamples(hdr)*MAX_GT) < 0)
-        {
-            error("Cannot update bcf genotypes at %s:%i", var.chr.c_str(), rec->pos);
-        }
-
-        free(tmp);
+        if (bcf_update_genotypes(hdr, rec, genotypes.data(), genotypes.size()) < 0)
+            error("Cannot update BCF genotypes on %s", var.chr.c_str());
 
         // write info
         {
@@ -668,7 +678,7 @@ namespace variant
             delete [] ambiguous;
         }
 
-        bcf_write1(_impl->fp, hdr, rec);
+        if (bcf_write1(_impl->fp, hdr, rec) < 0) error("Cannot write variant record: %s", _impl->filename.c_str());
     }
 
 } // namespace variant

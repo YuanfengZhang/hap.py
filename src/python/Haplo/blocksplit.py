@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -21,7 +23,7 @@ import logging
 import subprocess
 import tempfile
 import time
-import pipes
+import shlex
 
 
 def blocksplitWrapper(location_str, args):
@@ -33,14 +35,14 @@ def blocksplitWrapper(location_str, args):
     tf.close()
 
     if location_str:
-        loc = " -l %s" % pipes.quote(location_str)
+        loc = " -l %s" % shlex.quote(location_str)
     else:
         loc = ""
     to_run = "blocksplit %s %s%s -o %s --window %i --nblocks %i -f 0" % \
-             (pipes.quote(args.vcf1),
-              pipes.quote(args.vcf2),
+             (shlex.quote(args.vcf1),
+              shlex.quote(args.vcf2),
               loc,
-              tf.name,
+              shlex.quote(tf.name),
               args.window*2,
               args.pieces)
 
@@ -64,7 +66,7 @@ def blocksplitWrapper(location_str, args):
         os.unlink(tfo.name)
         with open(tfe.name) as f:
             for l in f:
-                logging.warn(l.replace("\n", ""))
+                logging.warning(l.replace("\n", ""))
         os.unlink(tfe.name)
 
     elapsed = time.time() - starttime

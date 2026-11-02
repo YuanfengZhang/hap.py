@@ -42,7 +42,12 @@ if [[ $? != 0 ]]; then
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.21.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.21.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.21.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "summary differs! -- diff ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.21.csv"
 	exit 1
@@ -63,7 +68,12 @@ if [[ $? != 0 ]]; then
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.1.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.1.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.1.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "summary differs! -- diff ${TMP_OUT}.summary.csv ${DIR}/../../example/NIST_indels/expected.summary.1.csv"
 	exit 1

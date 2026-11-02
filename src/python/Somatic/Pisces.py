@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -53,7 +55,7 @@ def extractPiscesSNVFeatures(vcfname, tag, avg_depth=None):
                     cols.append("E." + n)
                     logging.info("Scoring feature %i : %s" % (i, n))
             except:
-                logging.warn("Could not parse scoring feature names from Pisces output")
+                logging.warning("Could not parse scoring feature names from Pisces output")
 
     records = []
 
@@ -101,7 +103,7 @@ def extractPiscesSNVFeatures(vcfname, tag, avg_depth=None):
             if q not in rec or rec[q] is None:
                 rec[q] = 0
                 if not ("feat:" + q) in has_warned:
-                    logging.warn("Missing feature %s" % q)
+                    logging.warning("Missing feature %s" % q)
                     has_warned["feat:" + q] = True
 
         rec["tag"] = tag
@@ -117,10 +119,10 @@ def extractPiscesSNVFeatures(vcfname, tag, avg_depth=None):
                 t_DP_ratio = t_DP / float(avg_depth[rec["CHROM"]])
             except:
                 if not rec["CHROM"] in has_warned:
-                    logging.warn("Cannot normalize depths on %s" % rec["CHROM"])
+                    logging.warning("Cannot normalize depths on %s" % rec["CHROM"])
                     has_warned[rec["CHROM"]] = True
         elif "DPnorm" not in has_warned:
-            logging.warn("Cannot normalize depths.")
+            logging.warning("Cannot normalize depths.")
             has_warned["DPnorm"] = True
 
         # Gather the computed data into a dict

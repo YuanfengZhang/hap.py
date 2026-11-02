@@ -42,6 +42,7 @@
 
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <htslib/synced_bcf_reader.h>
 #include <htslib/vcf.h>
 
@@ -229,9 +230,11 @@ int main(int argc, char* argv[]) {
 
     try
     {
-        bcf_srs_t * reader = bcf_sr_init();
-        reader->require_index = 1;
-        reader->collapse = COLLAPSE_NONE;
+        std::unique_ptr<bcf_srs_t, decltype(&bcf_sr_destroy)> reader_owner(bcf_sr_init(), &bcf_sr_destroy);
+        bcf_srs_t * reader = reader_owner.get();
+        if (!reader) error("Cannot allocate VCF reader");
+        bcf_sr_set_opt(reader, BCF_SR_REQUIRE_IDX);
+        bcf_sr_set_opt(reader, BCF_SR_PAIR_LOGIC, BCF_SR_PAIR_EXACT);
         reader->streaming = 0;
         if(!regions_bed.empty())
         {
@@ -258,19 +261,19 @@ int main(int argc, char* argv[]) {
         }
 
         bool stop_after_chr_change = false;
+        bool seek_available = true;
         if(!chr.empty())
         {
-            int success = 0;
             if(start < 0)
             {
-                success = bcf_sr_seek(reader, chr.c_str(), 0);
+                seek_available = bcfhelpers::seek(reader, chr.c_str(), 0);
             }
             else
             {
-                success = bcf_sr_seek(reader, chr.c_str(), start);
+                seek_available = bcfhelpers::seek(reader, chr.c_str(), start);
                 std::cerr << "starting at " << chr << ":" << start << "\n";
             }
-            if(success == -reader->nreaders)
+            if(!seek_available)
             {
                 // cannot seek -> return no output
                 // write blocks
@@ -322,7 +325,7 @@ int main(int argc, char* argv[]) {
         int nl = 1;
         while(nl)
         {
-            nl = bcf_sr_next_line(reader);
+            nl = seek_available ? bcf_sr_next_line(reader) : 0;
             if (nl <= 0)
             {
                 break;
@@ -518,7 +521,6 @@ int main(int argc, char* argv[]) {
         {
             delete outputfile;
         }
-        bcf_sr_destroy(reader);
     }
     catch(std::runtime_error & e)
     {

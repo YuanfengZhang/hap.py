@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -33,7 +35,9 @@ import json
 import pandas
 
 scriptDir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'python27')))
+sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'hap.py')))
+# CLI siblings (pre/qfy) must remain importable under Python isolated mode.
+sys.path.insert(0, scriptDir)
 
 import Tools
 import Tools.bamstats
@@ -47,6 +51,7 @@ def main():
     parser.add_argument("-o", "--output", dest="output", help="Output CSV file name")
 
     args = parser.parse_args()
+    Tools.init()
 
     all_results = []
     for inp in args.input:
@@ -55,13 +60,13 @@ def main():
         all_results.append(bs)
 
     all_results = pandas.concat(all_results)
-    all_results.reset_index(inplace=True)
+    all_results = all_results.reset_index()
 
     pandas.set_option("display.width", 10000)
     pandas.set_option("display.max_colwidth", 2048)
     pandas.set_option("display.max_columns", 10000)
     pandas.set_option("display.max_rows", 1000000)
-    print str(all_results)
+    print(str(all_results))
     if args.output:
         all_results.to_csv(args.output)
 

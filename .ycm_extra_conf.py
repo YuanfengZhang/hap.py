@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This file is NOT licensed under the GPLv3, which is the license for the rest
 # of YouCompleteMe.
 #
@@ -56,10 +57,6 @@ flags = [
 'external/intervaltree',
 '-I',
 'external/boost_install/include',
-'-I',
-'/illumina/thirdparty/boost/boost_1_55_0_python2.4/include',
-'-I',
-'/opt/boost_1_55_0/include',
 '-I',
 '.',
 # ...and the same thing goes for the magic -x option which specifies the

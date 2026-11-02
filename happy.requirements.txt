@@ -1,9 +1,8 @@
-Cython
-numpy
-pandas
-psutil
-pip
-pysam
-nose
-scipy
-https://bitbucket.org/pkrusche/bx-python/get/tip.tar.bz2
+Cython==3.3.0
+numpy==2.5.4
+pandas==3.1.0
+psutil==7.2.2
+pysam==0.24.1
+scipy==1.18.1
+bx-python==0.15.1
+pytest==9.1.1

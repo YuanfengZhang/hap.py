@@ -39,6 +39,8 @@
 
 #include <algorithm>
 #include <map>
+#include <list>
+#include <limits>
 #include <vector>
 #include <cstdlib>
 #include <cstring>
@@ -105,7 +107,9 @@ public:
         }
 
         // find first interval that ends after start - 1 (so we join adjacent intervals)
-        auto ivr = intervals.lower_bound(iv.start-1);
+        const int64_t lower = iv.start == std::numeric_limits<int64_t>::min()
+            ? iv.start : iv.start - 1;
+        auto ivr = intervals.lower_bound(lower);
         if (ivr == intervals.end())
         {
             // no interval ends after start => prepend
@@ -118,7 +122,10 @@ public:
 
             // do they overlap
             // we know ivr->first >= start
-            if (ivr->second.start <= iv.end)
+            // Merge adjacency on either side; compare first to avoid overflowing the maximum coordinate.
+            if (ivr->second.start <= iv.end ||
+                (iv.end < std::numeric_limits<int64_t>::max() &&
+                 ivr->second.start == iv.end + 1))
             {
                 // overlap => merge
                 interval_t tmp = ivr->second;

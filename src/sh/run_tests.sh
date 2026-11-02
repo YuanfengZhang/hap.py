@@ -22,6 +22,41 @@ else
 fi
 
 ##############################################################
+# Modern I/O and launcher-argument regression tests
+##############################################################
+
+MODERN_IO_ROOT=$(mktemp -d "${TMPDIR}/happy-modern-io.XXXXXXXXXX") || exit 1
+"${PYTHON}" "${DIR}/run_modern_io_regression.py"     --bin-dir "${HCDIR}" --work-dir "${MODERN_IO_ROOT}/results"
+if [[ $? -ne 0 ]]; then
+    echo "Modern IO regression FAILED! Evidence: ${MODERN_IO_ROOT}"
+    exit 1
+else
+    echo "Modern IO regression SUCCEEDED! Evidence: ${MODERN_IO_ROOT}"
+fi
+
+SCMP_REFSPAN_ROOT=$(mktemp -d "${TMPDIR}/happy-scmp-refspan.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_scmp_refspan_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${SCMP_REFSPAN_ROOT}/results" || exit 1
+
+"${PYTHON}" -I "${DIR}/../python/tests/test_extended_comparator.py" || exit 1
+"${PYTHON}" -I "${DIR}/../python/tests/test_extended_metric_schema.py" || exit 1
+"${PYTHON}" -I "${DIR}/../python/tests/test_summary_comparator.py" || exit 1
+"${PYTHON}" -I "${DIR}/../python/tests/test_insertion_boundary_adapter.py" || exit 1
+"${PYTHON}" -I "${DIR}/../python/tests/test_reference_comparator.py" || exit 1
+FP_CLASSIFICATION_ROOT=$(mktemp -d "${TMPDIR}/happy-fp-classification.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_fp_classification_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${FP_CLASSIFICATION_ROOT}/results" || exit 1
+INSERTION_BOUNDARY_ROOT=$(mktemp -d "${TMPDIR}/happy-insertion-boundary.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_insertion_boundary_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${INSERTION_BOUNDARY_ROOT}/results" || exit 1
+REGION_LABEL_ROOT=$(mktemp -d "${TMPDIR}/happy-region-label.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_region_label_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${REGION_LABEL_ROOT}/results" || exit 1
+REFERENCE_ROOT=$(mktemp -d "${TMPDIR}/happy-reference-header.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_reference_header_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${REFERENCE_ROOT}/results" || exit 1
+
+##############################################################
 # Test Multimerge
 ##############################################################
 

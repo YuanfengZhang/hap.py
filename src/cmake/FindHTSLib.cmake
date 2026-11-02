@@ -1,57 +1,43 @@
-#
-# Copyright (c) 2010-2015 Illumina, Inc.
-# All rights reserved.
-# 
-# This file is distributed under the simplified BSD license.
-# The full text can be found here (and in LICENSE.txt in the root folder of
-# this distribution):
-#
-# https://github.com/Illumina/licenses/blob/master/Simplified-BSD-License.txt
-# - Try to find htslib
-# Define the environment variable HTSLIB_ROOT to point to a htslib 
-# download directory.
-# Once done this will define
-#  HTSLIB_FOUND - System has htslib
-#  HTSLIB_INCLUDE_DIRS - The htslib include directories
-#  HTSLIB_LIBRARIES - The libraries needed
-
-# message (STATUS "FindHTSlib.cmake")
-# message (STATUS "ENV HTSLIB_ROOT : " $ENV{HTSLIB_ROOT})
-
-if( DEFINED ENV{HTSLIB_ROOT} )
-    set( HTSLIB_ROOT $ENV{HTSLIB_ROOT} )
-    # message (STATUS "HTSLIB_ROOT : ${HTSLIB_ROOT}")
-
-    # set library directories
-    set(HTSLIB_LIBRARY_DIR ${HTSLIB_ROOT})
-    # set include directories
-    set(HTSLIB_INCLUDE_DIR ${HTSLIB_ROOT})
-
-    find_path(HTSLIB_INCLUDE_DIR htslib/hts.h
-              HINTS ${HTSLIB_INCLUDEDIR}
-              )
-
-  	find_library(HTSLIB_LIBRARY NAMES libhts.a
-                 HINTS ${HTSLIB_LIBRARY_DIR})
-
-    set(HTSLIB_LIBRARIES ${HTSLIB_LIBRARY} )
-    set(HTSLIB_INCLUDE_DIRS ${HTSLIB_INCLUDE_DIR} )
-
-    set(HTSLIB_FOUND TRUE)
-else()
-    find_path(HTSLIB_INCLUDE_DIR htslib/hts.h
-              HINTS "${CMAKE_BINARY_DIR}/include")
-
-	  find_library(HTSLIB_LIBRARY NAMES libhts.a
-                 HINTS "${CMAKE_BINARY_DIR}/lib")
-
-    set(HTSLIB_LIBRARIES ${HTSLIB_LIBRARY} )
-    set(HTSLIB_INCLUDE_DIRS ${HTSLIB_INCLUDE_DIR} )
-
-    set(HTSLIB_FOUND TRUE)
+if(NOT HTSLIB_ROOT)
+    message(FATAL_ERROR "HTSLIB_ROOT is required for paired header/library discovery")
 endif()
-
-include_directories(${HTSLIB_INCLUDE_DIRS})
-
-message (STATUS "HTSLIB_INCLUDE_DIR=" ${HTSLIB_INCLUDE_DIR})
-#message (STATUS "HTSLIB_LIBRARIES=" ${HTSLIB_LIBRARIES})
+unset(HTSLIB_INCLUDE_DIR CACHE)
+unset(HTSLIB_LIBRARY CACHE)
+find_path(HTSLIB_INCLUDE_DIR NAMES htslib/hts.h PATHS "${HTSLIB_ROOT}/include" NO_DEFAULT_PATH REQUIRED)
+find_library(HTSLIB_LIBRARY NAMES hts PATHS "${HTSLIB_ROOT}/lib" NO_DEFAULT_PATH REQUIRED)
+if(HTSLIB_LIBRARY MATCHES "\\.a$")
+    message(FATAL_ERROR "Static HTSlib is unsupported; provide a shared-library prefix")
+endif()
+if(HTSLIB_INCLUDE_DIR)
+    file(STRINGS "${HTSLIB_INCLUDE_DIR}/htslib/hts.h" _hts_version REGEX "^#define HTS_VERSION [0-9]+")
+    string(REGEX MATCH "[0-9]+" _hts_number "${_hts_version}")
+    math(EXPR _hts_major "${_hts_number} / 100000")
+    math(EXPR _hts_minor "(${_hts_number} / 100) % 1000")
+    math(EXPR _hts_patch "${_hts_number} % 100")
+    set(HTSLib_VERSION "${_hts_major}.${_hts_minor}.${_hts_patch}")
+endif()
+# Execute the selected library, not a version inferred solely from headers.
+if(CMAKE_CROSSCOMPILING)
+    message(FATAL_ERROR "HTSlib runtime pairing requires a native configure")
+endif()
+include(CheckCSourceRuns)
+set(CMAKE_REQUIRED_INCLUDES "${HTSLIB_INCLUDE_DIR}")
+set(CMAKE_REQUIRED_LIBRARIES "${HTSLIB_LIBRARY}")
+unset(HAPPY_HTSLIB_PAIRED CACHE)
+check_c_source_runs("#include <htslib/hts.h>
+#include <stdio.h>
+int main(void) { int a=0,b=0,c=0; if(sscanf(hts_version(), \"%d.%d.%d\", &a,&b,&c)<2) return 1; return a*100000+b*100+c != HTS_VERSION; }" HAPPY_HTSLIB_PAIRED)
+unset(CMAKE_REQUIRED_INCLUDES)
+unset(CMAKE_REQUIRED_LIBRARIES)
+if(NOT HAPPY_HTSLIB_PAIRED)
+    message(FATAL_ERROR "HTSlib selected header and runtime library do not match")
+endif()
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(HTSLib REQUIRED_VARS HTSLIB_INCLUDE_DIR HTSLIB_LIBRARY VERSION_VAR HTSLib_VERSION)
+set(HTSLIB_FOUND "${HTSLib_FOUND}")
+set(HTSLIB_INCLUDE_DIRS "${HTSLIB_INCLUDE_DIR}")
+set(HTSLIB_LIBRARIES HTSLib::HTSLib)
+if(HTSLib_FOUND AND NOT TARGET HTSLib::HTSLib)
+    add_library(HTSLib::HTSLib UNKNOWN IMPORTED)
+    set_target_properties(HTSLib::HTSLib PROPERTIES IMPORTED_LOCATION "${HTSLIB_LIBRARY}" INTERFACE_INCLUDE_DIRECTORIES "${HTSLIB_INCLUDE_DIR}")
+endif()

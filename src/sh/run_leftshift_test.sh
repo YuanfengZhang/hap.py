@@ -26,7 +26,11 @@ if [[ $? != 0 ]]; then
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_extended.py ${TMP_OUT}.extended.csv  ${DIR}/../data/leftshifting_example/expected.extended.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+${PYTHON} ${DIR}/compare_extended.py ${TMP_OUT}.extended.csv  ${DIR}/../data/leftshifting_example/expected.extended.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}").leftshift-strict.log" 2>&1
+LEGACY_EXTENDED_STATUS=$?
+printf '%s\n' "$LEGACY_EXTENDED_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}").leftshift-strict.exit-code"
+${PYTHON} ${DIR}/compare_extended.py ${TMP_OUT}.extended.csv  ${DIR}/../data/leftshifting_example/expected.extended.csv --schema ga4gh-metrics-v2
 if [[ $? != 0 ]]; then
 	echo "Counts differ! ${TMP_OUT}.extended.csv ${DIR}/../data/leftshifting_example/expected.extended.csv"
 	exit 1

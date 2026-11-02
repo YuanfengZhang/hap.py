@@ -33,9 +33,10 @@ More information can be found below in the [usage section](#usage).
 * [Usage](#usage)
   * [hap.py](#happy)
   * [som.py](#sompy)
+* [Using Python 3 hap.py in variantbenchmarking](#using-python-3-happy-in-variantbenchmarking)
 * [Installation](#installation)
+  * [Docker](#docker-recommended)
   * [Helper script](#helper-script)
-  * [Docker](#docker)
   * [Compiling from source with CMake](#compiling-from-source-with-cmake)
 * [System requirements](#system-requirements)
   * [Hardware](#hardware)
@@ -266,219 +267,162 @@ test.stats.csv
 The most relevant metrics are recall and precision. UNK calls are the calls that are outside the
 coverage of the truthset.
 
+## Using Python 3 hap.py in variantbenchmarking
+
+The application version is `modern-20261101`; the local image name is
+`hap.py-py3`. Override the Nextflow task containers explicitly: changing the host
+PATH does not change the container used by the workflow. Run the following
+examples from the variantbenchmarking workflow root, not this source directory.
+
+### Singularity (Linux x86_64)
+
+Place `hap.py-py3.sif` on storage accessible to every execution node. Create
+`hap.py-py3-singularity.config` with the actual absolute image path:
+
+```groovy
+singularity.enabled = true
+singularity.autoMounts = true
+docker.enabled = false
+process {
+    withName: 'HAPPY_(HAPPY|PREPY)' {
+        container = '/absolute/path/hap.py-py3.sif'
+        containerOptions = '--env TMPDIR=.'
+        ext.happy_version = 'modern-20261101'
+    }
+}
+```
+
+`TMPDIR=.` uses the writable task directory instead of the read-only image.
+Inputs, the image, and the Nextflow work directory must be visible on all nodes.
+Follow site-specific bind-mount rules. Nextflow uses `singularity exec`, not the
+image runscript.
+
+Keep the samplesheet, reference, truth set, BED, and analysis parameters required
+by your analysis. Load the override after any site-specific configurations:
+
+```bash
+nextflow run . -profile singularity \
+  -params-file params.yaml \
+  -c hap.py-py3-singularity.config \
+  --analysis germline --variant_type small --method happy \
+  --outdir results-hap.py-py3 \
+  -work-dir work-hap.py-py3 \
+  -with-trace trace-hap.py-py3.txt
+```
+
+Supply your own `params.yaml`; it is not provided by the image. Replace existing
+output/work directory options instead of duplicating them. Use independent
+working directories for initial validation rather than reusing old task results.
+
+### Docker alternative
+
+Import the image archive and add a local alias compatible with the workflow's
+registry settings:
+
+```bash
+docker load -i hap.py-py3.tar.gz
+docker tag hap.py-py3 quay.io/local/hap.py-py3:latest
+```
+
+The `quay.io/local` alias is local only; it does not imply publication. Create
+`hap.py-py3-docker.config`:
+
+```groovy
+docker.enabled = true
+singularity.enabled = false
+process {
+    withName: 'HAPPY_(HAPPY|PREPY)' {
+        container = 'quay.io/local/hap.py-py3:latest'
+        containerOptions = '--pull=never --env TMPDIR=.'
+        ext.happy_version = 'modern-20261101'
+    }
+}
+```
+
+Use the preceding Nextflow example with `-profile docker` and
+`-c hap.py-py3-docker.config`. Preload the image on every execution node. Other
+workflow tools retain their original images. Do not combine this override with
+an older development-image override.
+
+Only `HAPPY_HAPPY` and `HAPPY_PREPY` are replaced, not som.py or standalone RTG
+modules. Engine selection still comes from workflow arguments. To request
+vcfeval, add the following selector inside the same `process` block, retaining
+other arguments required by your analysis:
+
+```groovy
+    withName: 'HAPPY_HAPPY' {
+        ext.args = '--engine=vcfeval --leftshift'
+    }
+```
+
+Inspect task `.command.run` files and version records to confirm the actual
+image and application version. `HAPPY_PREPY` runs only when the selected
+preprocessing mode requires it. Targeted three-engine image acceptance does not
+establish full workflow or historical golden-suite equivalence. Validate your
+own inputs, references, and stratifications. See the
+[container build and usage guide](doc/modern-build.md).
+
 ## Installation
+
+The modernization build uses **CPython 3.14**, an explicitly provisioned dependency
+prefix, and version-independent private modules in `prefix/lib/hap.py`.
+Configuration does not download software or execute Git.
+
+### Docker (recommended)
+
+The rebuilt `hap.py-py3` image targets Linux x86_64. It has not been published
+to a public registry. Transfer it with `docker save` / `docker load` before use;
+do not attempt to pull this local tag. See the
+[container build and usage guide](doc/modern-build.md) for build instructions,
+mounts, and validation limitations.
+
+```bash
+mkdir -p results/tmp
+docker run --rm --pull never --network none \
+  --user "$(id -u):$(id -g)" --workdir /out \
+  -e TMPDIR=/out/tmp -e RTG_MEM=4G \
+  -v "$PWD/data:/data:ro" -v "$PWD/results:/out" \
+  hap.py-py3 \
+  hap.py /data/truth.vcf.gz /data/query.vcf.gz \
+  -r /data/reference.fa -f /data/confident.bed \
+  -o /out/benchmark --engine vcfeval --threads 4 --scratch-prefix /out/tmp
+```
+
+The `data` directory must contain a matching reference FASTA/FAI, truth and query
+BGZF VCFs with indexes, and a confident-region BED. Known historical golden-suite
+differences remain; successful builds and targeted acceptance do not imply that
+all historical tests pass.
 
 ### Helper script
 
-The simplest way to install hap.py is to use the helper script and your system Python install
-(requires these packages: Cython, Scipy, numpy, pandas, pybedtools, pysam, bx-python).
-
-This command installs everything into ~/hap.py-install:
-
-```
-python install.py ~/hap.py-install
-```
-
-To also download rtgtools during the installation process and deploy it with this version
-of hap.py, you can add the `--with-rtgtools` flag. For this to work, you must have a working
-installation of Java 1.8 and Apache Ant 1.9.x.
-
-```
-python install.py ~/hap.py-install --with-rtgtools
-```
-
-The installer has an option `--boost-root` that allows us to use a specific installation of boost
-(see above for instructions):
-
-```
-python install.py ~/hap.py-install --boost-root $HOME/boost_1_55_0_install
-```
-
-To use a special version of Python, run the installer with it:
-
-```
-$HOME/my-virtualenv/bin/python install.py ~/hap.py-install
-```
-
-To create a virtualenv:
-
-```
-python install.py ~/workspace-is/hap.py-install --python=virtualenv --python-virtualenv-dir=$HOME/my-virtualenv/hc.ve
-```
-
-There are various workaround / testing switches:
-
-* `--python-virtualenv-update`  updates an existing virtualenv
-* `--python-virtualenv-force`  overwrites the virtualenv if it exists
-* `--pip-fix-cert` works around outdated SSL certificates when using pip
-* `--no-tests` disables the unit/integration tests after installation
-* `--no-rebuild-external` don't rebuild the external dependencies (htslib, ...) unless necessary
-* `--sge-mode` require switch `--force-interactive` to run hap.py
- interactively (useful to prevent running on a head node when installing on
- systems with SGE)
-
-### Docker
-
-Clone this repository and build a Docker image as follows.
-```
-$ sudo docker build .
-$ sudo docker images
-REPOSITORY     TAG            IMAGE ID            CREATED             VIRTUAL SIZE
-<...>          latest         3d03a99b3d81        1 second ago        <...>
-$ sudo docker run -ti --rm 3d03a99b3d81 bin/bash
-$/ /opt/hap.py/bin/hap.py
-```
-A pre-built docker image can be found here: [https://hub.docker.com/r/pkrusche/hap.py](https://hub.docker.com/r/pkrusche/hap.py). It can
-be obtained by running:
-```bash
-docker pull pkrusche/hap.py
-```
-If the current directory contains a clone of the hap.py repository, hap.py can be run in Docker as follows:
-```bash
-sudo docker run -it -v `pwd`:/data pkrusche/hap.py /opt/hap.py/bin/hap.py /data/example/PG_performance.vcf.gz /data/example/performance.vcf.gz -o /data/test
-```
-The `-v` argument mounts the current directory as `/data` in the Docker image. The output should also
-appear in the current directory.
-
-The default Docker image is based on Ubuntu. To use a Centos6 image as a base, use [Dockerfile.centos6](Dockerfile.centos6).
-
-```
-docker build -f Dockerfile.centos6 .
-```
+`external/bootstrap.sh` explicitly provisions dependencies; `install.py` installs
+to a new versioned directory. Configuration performs no downloads or implicit
+dependency installation. Preserve absolute dependency prefixes when installing
+on the host: moving the installation directory alone is insufficient. See the
+container guide for details.
 
 ### Compiling from source with CMake
 
-You will need these tools / libraries on your system to compile the code:
-
-* CMake &gt; 2.8
-* GCC/G++ 4.9.2+ for compiling
-* Boost 1.55+
-* Python 2, version 2.7.8 or greater
-* Python packages: Pandas, Numpy, Scipy, pysam, bx-python
-* Java 1.8 when using vcfeval.
-
-Then to compile:
-
-1.  Get a hap.py checkout:
-    ```bash
-    git clone https://github.com/sequencing/hap.py
-    ```
-2.  Make a build folder
-    ```bash
-    mkdir hap.py-build
-    cd hap.py-build
-    ```
-3.  Run CMake
-    ```bash
-    cmake ../hap.py
-    ```
-4.  Build
-    ```bash
-    make
-    ```
-
-If this is successful, the bin subdirectory of your build folder will contain binaries and scripts:
-
 ```bash
-$ python bin/hap.py --version
-Hap.py v0.3.7
+cmake -S . -B .work/build   -DHAPPY_DEPENDENCY_PREFIX="$PWD/.pixi/envs/default"   -DPython3_EXECUTABLE=/absolute/path/to/python3.14   -DHAPLOTYPES_VERSION=modernization -DCMAKE_BUILD_TYPE=Release
+cmake --build .work/build --parallel 16
+cmake --install .work/build --prefix "$PWD/install"
 ```
 
-Note that hap.py will copy all Python source files to the build folder, so when making changes to
-any Python component, `make` must be run to make sure the scripts in the build folder are
-up-to-date.
-
-The source for hap.py contains a script [configure.sh](configure.sh) which shows some basic additional
-configuration flags, and an automated way to pre-package CMake setups. Here is a list of additional flags for CMake to change compile options help it find dependencies:
-
-*  `-DCMAKE_BUILD_TYPE=Debug` -- set the build type, allowed values are `Debug` and `Release`
-*  `-DCMAKE_C_COMPILER=/usr/bin/gcc` and `-DCMAKE_CXX_COMPILER=/usr/bin/g++` -- change the compiler path
-*  `-DCMAKE_INSTALL_PREFIX=/usr/local` -- set an installation directory that will be used by make install.
-*  `-DBOOST_ROOT=$HOME/boost_1_55_0_install` -- set the path to Boost. Run the following commands to compile and install boost:
-```bash
-cd ~
-wget http://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.bz2
-tar xjf boost_1_55_0.tar.bz2
-cd boost_1_55_0
-./bootstrap.sh --with-libraries=filesystem,chrono,thread,iostreams,system,regex,test,program_options
-./b2 --prefix=$HOME/boost_1_55_0_install install
-```
-*  `-DUSE_SGE` -- enable the `--force-interactive` switch in hap.py.
-*  `-DBUILD_VCFEVAL=ON` -- Download and build rtgtools / vcfeval. This is a comparison engine that can be used
-   as an alternative to the built-in xcmp in hap.py. To successfully build and run vcfeval, you will need:
-   - A Java JRE, newer than 1.8.x
-   - ant > 1.9.2 (older versions of ant will not successfully build rtgtools)
-   See [src/sh/illumina-setup.sh]() for an example. If running Java requires any special setup
-   (or to configure any other environment variables), you can specify a wrapper script using
-   `-DVCFEVAL_WRAPPER={absolute_path_to_wrapper_script}`. See [src/sh/rtg-wrapper.sh]() for an
-   example.
-
+For an independent instrumented build use another build directory and
+`-DCMAKE_BUILD_TYPE=Debug -DHAPPY_SANITIZERS=ON`. Never reuse a noninstrumented
+build cache for sanitizer acceptance.
 
 ## System requirements
 
-### Hardware
+CMake >=3.24, a C++17 compiler, Boost 1.92, HTSlib/bcftools/samtools 1.24,
+JsonCpp 1.9.8, zlib 1.3.2, and the packages in `happy.requirements.txt`.
+The tested platform is Linux x86-64; historic claims for CentOS 5/6 or Ubuntu
+12.04 do not establish support for this toolchain. Windows and macOS have not
+been validated during this migration.
 
-Compiling and testing can be done on a standard desktop system with 8GB of RAM. Whole-genome
-comparisons (e.g. comparing a gVCF file against the [Platinum Genomes truth dataset](http://www.illumina.com/platinumgenomes/))
-can use up to 64GB of RAM (20GB typical, depending on the input VCF) and about 4-12 minutes
-using 40 processor cores. Whole exome comparison (using an exome bed mask and the `-T` switch)
-can be carried out on a desktop system.
-
-### Linux
-
-Hap.py is known to build and run on the following linux distributions (see also the [Dockerfile](Dockerfile)
-for a list of required packages):
-
-    Ubuntu 12.04,14.04,16.04,18.04
-    CentOS 5,6,7
-
-Hap.py must be compiled with g++ version 4.9.x or later, or with a recent version of Clang (testing is performed
-with g++).
-
-### OS X
-
-Hap.py builds and passes basic tests on OS X 10.9+, but full WGS analyses are not tested for this platform.
-
-### Windows
-
-Hap.py is not tested on Windows. The main dependency that fails compilation is htslib. Given a build
-of htslib and pysam, using hap.py on Windows should be possible.
-
-### Other requirements
-
-Hap.py requires a human genome reference sequence which contains at least
-chromosomes 1-22,X,Y,M. The chromosomes should be named chr1-chr22, chrX, chrY,
-chrM. there is a script  in [src/sh/make_hg19.sh](src/sh/make_hg19.sh) to create
-such a sequence, but you can also  specify your own. In order for the
-integration tests to run successfully, it is necessary  to point hap.py to the
-reference sequence using
-
-```bash
-export HGREF=<path-to-hg19.fa>
-```
-
-Note that, while the test cases are based on hg19, other reference sequences are
-usable as well  once the tool is installed.
-
-Hap.py also requires a copy of the [Boost libraries](http://www.boost.org) to
-work, with version >=  1.55. If compilation should fail using the included version
-of boost, you can compile a subset of boost like this:
-
-```bash
-cd ~
-wget http://downloads.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.bz2
-tar xjf boost_1_55_0.tar.bz2
-cd boost_1_55_0
-./bootstrap.sh --with-libraries=filesystem,chrono,thread,iostreams,system,regex,test,program_options
-./b2 --prefix=$HOME/boost_1_55_0_install install
-```
-
-You can point Cmake to your version of boost as follows:
-
-```bash
-export BOOST_ROOT=$HOME/boost_1_55_0_install
-```
-
-The complete list of dependencies / packages to install beforehand can be found
-in the [Dockerfile](Dockerfile).
-
+A reference need not be human or use chr-prefixed names. The FASTA/FAI sequence
+dictionary, not an hg19/hg38 label, is authoritative. Reference precedence is
+explicit `-r`, then `HGREF`, then `HG19`, then the documented fallback; an invalid
+explicit reference is an error. Full legacy integration tests require the exact
+matching hg19 reference, not an arbitrary genome with similar contig names.

@@ -12,3 +12,6 @@
 # Denote all files that are truly binary and should not be modified.
 *.png binary
 *.jpg binary
+# Preserve upstream source material and exact patch context bytes.
+/external/rtg-licenses/** -text whitespace=-trailing-space
+/external/patches/*.patch -text whitespace=-trailing-space

@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -23,6 +25,7 @@ import logging
 import pandas
 import numpy as np
 import itertools
+from decimal import Decimal, InvalidOperation
 
 from Tools import ci
 
@@ -97,7 +100,7 @@ def roc(roc_table, output_path,
                 header = l.split("\t")
             else:
                 rec = {}
-                for k, v in itertools.izip(header, l.split("\t")):
+                for k, v in zip(header, l.split("\t")):
                     rec[k] = v
 
                 if filter_handling:
@@ -160,13 +163,11 @@ def roc(roc_table, output_path,
 
     if "all" not in result:
         # minimal empty DF
-        minidata = [{"Type": "SNP", "Subtype": "*", "Filter": "ALL", "Genotype": "*", "Subset": "*", "QQ": "*"} for _ in xrange(2)]
+        minidata = [{"Type": "SNP", "Subtype": "*", "Filter": "ALL", "Genotype": "*", "Subset": "*", "QQ": "*"} for _ in range(2)]
         minidata[1]["Type"] = "INDEL"
         result["all"] = pandas.DataFrame(minidata, columns=RESULT_ALLCOLUMNS)
-        for i, c in enumerate(RESULT_ALLCOLUMNS):
-            result["all"][c] = result["all"][c].astype(RESULT_ALLDTYPES[i], raise_on_error=False)
 
-    for k, v in result.items():
+    for k, v in list(result.items()):
         result[k] = _postprocessRocData(pandas.DataFrame(v, columns=RESULT_ALLCOLUMNS))
 
         # compute ratios
@@ -174,8 +175,8 @@ def roc(roc_table, output_path,
                            "QUERY.TP", "QUERY.TOTAL", "QUERY.UNK"]:
             result[k][count_type + ".TiTv_ratio"] = pandas.to_numeric(result[k][count_type + ".ti"], errors="coerce") / pandas.to_numeric(result[k][count_type + ".tv"], errors="coerce")
             result[k][count_type + ".het_hom_ratio"] = pandas.to_numeric(result[k][count_type + ".het"], errors="coerce") / pandas.to_numeric(result[k][count_type + ".homalt"], errors="coerce")
-            result[k][count_type + ".TiTv_ratio"].replace([np.inf, -np.inf], np.nan, inplace=True)
-            result[k][count_type + ".het_hom_ratio"].replace([np.inf, -np.inf], np.nan, inplace=True)
+            result[k][count_type + ".TiTv_ratio"] = result[k][count_type + ".TiTv_ratio"].replace([np.inf, -np.inf], np.nan)
+            result[k][count_type + ".het_hom_ratio"] = result[k][count_type + ".het_hom_ratio"].replace([np.inf, -np.inf], np.nan)
 
         if 0 < ci_alpha < 1:
             logging.info("Computing recall CIs for %s" % k)
@@ -224,6 +225,24 @@ def _postprocessRocData(roctable):
         except:
             return 0
 
+    # Nullable integral region metadata must not silently accept malformed text
+    # or lose precision above the IEEE-754 exact integer range.
+    for column in ('Subset.Size', 'Subset.IS_CONF.Size', 'Subset.Level'):
+        values = []
+        for value in roctable[column]:
+            if pandas.isna(value) or value in ('', '.', 'NA', 'nan'):
+                values.append(pandas.NA)
+            else:
+                try:
+                    number = Decimal(str(value))
+                    if not number.is_finite() or number != number.to_integral_value():
+                        raise ValueError(f'Non-integral {column}: {value}')
+                    parsed = int(number)
+                except InvalidOperation as error:
+                    raise ValueError(f'Invalid {column}: {value}') from error
+                values.append(parsed)
+        roctable[column] = pandas.array(values, dtype='Int64')
+
     typeconv = [("METRIC.Recall", None),
                 ("METRIC.Precision", None),
                 ("METRIC.Frac_NA", None),
@@ -257,6 +276,19 @@ def _postprocessRocData(roctable):
         if c:
             roctable[col] = roctable[col].apply(c)
 
-    roctable.sort_values(["Type", "Subtype", "Subset", "Filter", "Genotype", "QQ.Field", "QQ"], inplace=True)
+    def ratio(numerator, denominator):
+        return numerator.div(denominator.where(denominator != 0)).fillna(0.0)
+
+    roctable['METRIC.Recall'] = ratio(roctable['TRUTH.TP'], roctable['TRUTH.TP'] + roctable['TRUTH.FN'])
+    roctable['METRIC.Precision'] = ratio(roctable['QUERY.TP'], roctable['QUERY.TP'] + roctable['QUERY.FP'])
+    roctable['METRIC.Frac_NA'] = ratio(roctable['QUERY.UNK'], roctable['QUERY.TOTAL'])
+    precision, recall = roctable['METRIC.Precision'], roctable['METRIC.Recall']
+    roctable['METRIC.F1_Score'] = ratio(2 * precision * recall, precision + recall)
+
+    # Numeric thresholds follow the summary/missing markers; preserve QQ text.
+    roctable = roctable.sort_values(
+        ["Type", "Subtype", "Subset", "Filter", "Genotype", "QQ.Field", "QQ"],
+        key=lambda column: pandas.to_numeric(column, errors='coerce') if column.name == 'QQ' else column,
+        na_position='first', kind='stable')
 
     return roctable[RESULT_ALLCOLUMNS]

@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -31,7 +33,9 @@ import traceback
 import json
 
 scriptDir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'python27')))
+sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'hap.py')))
+# CLI siblings (pre/qfy) must remain importable under Python isolated mode.
+sys.path.insert(0, scriptDir)
 
 import Tools
 
@@ -51,6 +55,7 @@ def main():
                         help="pass a BAM file for aligner name/version extraction")
 
     args = parser.parse_args()
+    Tools.init()
 
     ci = CallerInfo()
     ci.addVCF(args.input)

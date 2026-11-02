@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -38,7 +40,9 @@ import json
 from collections import Counter
 
 scriptDir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'python27')))
+sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'hap.py')))
+# CLI siblings (pre/qfy) must remain importable under Python isolated mode.
+sys.path.insert(0, scriptDir)
 
 import Tools
 from Tools.bcftools import runBcftools, parseStats, preprocessVCF
@@ -95,7 +99,7 @@ def parse_args():
                         default=False, action="store_true",
                         help="print a table giving the number of ambiguous events per category")
 
-    parser.add_argument("-r", "--reference", dest="ref", default=Tools.defaultReference(),
+    parser.add_argument("-r", "--reference", dest="ref", default=None,
                         help="Specify a reference file.")
 
     parser.add_argument("--scratch-prefix", dest="scratch_prefix",
@@ -112,7 +116,7 @@ def parse_args():
     parser.add_argument("-P", "--include-nonpass", dest="inc_nonpass", action="store_true", default=False,
                         help="Use to include failing variants in comparison.")
 
-    parser.add_argument("--feature-table", dest="features", default=False, choices=Somatic.FeatureSet.sets.keys(),
+    parser.add_argument("--feature-table", dest="features", default=False, choices=list(Somatic.FeatureSet.sets.keys()),
                         help="Select a feature table to output.")
 
     parser.add_argument("--happy-stats", dest="happy_stats", default=False, action="store_true",
@@ -191,6 +195,7 @@ def parse_args():
                                    help="Set logging level to output errors only.")
 
     args = parser.parse_args()
+    args.ref = Tools.defaultReference(args.ref)
 
     if args.verbose:
         loglevel = logging.INFO
@@ -201,9 +206,9 @@ def parse_args():
 
     try:
         if type(args.af_strat_binsize) is str:
-            args.af_strat_binsize = map(float, args.af_strat_binsize.split(","))
+            args.af_strat_binsize = list(map(float, args.af_strat_binsize.split(",")))
         else:
-            args.af_strat_binsize = map(float, [args.af_strat_binsize])
+            args.af_strat_binsize = list(map(float, [args.af_strat_binsize]))
 
         if not args.af_strat_binsize:
             raise Exception("Bin size list is empty")
@@ -226,7 +231,7 @@ def parse_args():
         args.roc = ROC.make(args.roc)
         args.features = args.roc.ftname
         if not args.inc_nonpass:
-            logging.warn("When creating ROCs without the -P switch, the ROC data points will only "
+            logging.warning("When creating ROCs without the -P switch, the ROC data points will only "
                          "include filtered variants (i.e. they will normally end at the caller's "
                          "quality threshold).")
 
@@ -269,6 +274,11 @@ def resolve_vtype(args):
     return vtype
 
 
+def safe_divide(numerator: float, denominator: float) -> float:
+    """Use the native quantifier's zero-denominator convention."""
+    return numerator / denominator if denominator else 0.0
+
+
 def summary_from_featuretable(f, args):
 
     # define vtype to match those in hap.py
@@ -305,18 +315,19 @@ def summary_from_featuretable(f, args):
         # query counts across all AFs
         r["QUERY.FP"] = query[(query["tag"] == "FP")].shape[0]
         r["QUERY.UNK"] = query[(query["tag"] == "UNK")].shape[0] + query[(query["tag"] == "AMBI")].shape[0]
-        r["QUERY.TOTAL"] = r["TRUTH.TP"] + r["QUERY.FP"] + r["QUERY.UNK"]
+        r["QUERY.TP"] = query[query["tag"] == "TP"].shape[0]
+        r["QUERY.TOTAL"] = r["QUERY.TP"] + r["QUERY.FP"] + r["QUERY.UNK"]
         r["FP.gt"] = "NA"
         r["QUERY.TOTAL.het_hom_ratio"] = "NA"
         r["QUERY.TOTAL.TiTv_ratio"] = "NA"
 
         # performance metrics across all AFs
-        r["METRIC.Recall"] = np.round(np.true_divide(r["TRUTH.TP"], r["TRUTH.TOTAL"]), decimals)
-        r["METRIC.Precision"] = np.round(np.true_divide(r["TRUTH.TP"], (r["TRUTH.TP"] + r["QUERY.FP"])), decimals)
-        r["METRIC.Frac_NA"] = np.round(np.true_divide(r["QUERY.UNK"], r["QUERY.TOTAL"]), decimals)
-        r["METRIC.F1_Score"] = np.round(np.true_divide(2 * r["METRIC.Precision"] * r["METRIC.Recall"], (r["METRIC.Precision"] + r["METRIC.Recall"])), decimals)
+        r["METRIC.Recall"] = np.round(safe_divide(r["TRUTH.TP"], r["TRUTH.TOTAL"]), decimals)
+        r["METRIC.Precision"] = np.round(safe_divide(r["QUERY.TP"], (r["QUERY.TP"] + r["QUERY.FP"])), decimals)
+        r["METRIC.Frac_NA"] = np.round(safe_divide(r["QUERY.UNK"], r["QUERY.TOTAL"]), decimals)
+        r["METRIC.F1_Score"] = np.round(safe_divide(2 * r["METRIC.Precision"] * r["METRIC.Recall"], (r["METRIC.Precision"] + r["METRIC.Recall"])), decimals)
 
-        happy_summary = happy_summary.append(pandas.DataFrame([r]))
+        happy_summary = pandas.concat([happy_summary, pandas.DataFrame([r])], ignore_index=True)
 
     # reorder columns and return
     happy_summary = happy_summary[happy_cols]
@@ -388,17 +399,18 @@ def extended_from_featuretable(f, args):
             # query counts across all AFs
             r["QUERY.FP"] = query[(query["tag"] == "FP")].shape[0]
             r["QUERY.UNK"] = query[(query["tag"] == "UNK")].shape[0] + query[(query["tag"] == "AMBI")].shape[0]
-            r["QUERY.TOTAL"] = r["TRUTH.TP"] + r["QUERY.FP"] + r["QUERY.UNK"]
+            r["QUERY.TP"] = query[query["tag"] == "TP"].shape[0]
+            r["QUERY.TOTAL"] = r["QUERY.TP"] + r["QUERY.FP"] + r["QUERY.UNK"]
             r["FP.gt"] = "NA"
             r["QUERY.TOTAL.het_hom_ratio"] = "NA"
             r["QUERY.TOTAL.TiTv_ratio"] = "NA"
 
             # performance metrics across all AFs
-            r["METRIC.Recall"] = np.round(np.true_divide(r["TRUTH.TP"], r["TRUTH.TOTAL"]), decimals)
-            r["METRIC.Precision"] = np.round(np.true_divide(r["TRUTH.TP"], (r["TRUTH.TP"] + r["QUERY.FP"])), decimals)
-            r["METRIC.Frac_NA"] = np.round(np.true_divide(r["QUERY.UNK"], r["QUERY.TOTAL"]), decimals)
-            r["METRIC.F1_Score"] = np.round(np.true_divide(2 * r["METRIC.Precision"] * r["METRIC.Recall"], (r["METRIC.Precision"] + r["METRIC.Recall"])), decimals)
-            happy_extended = happy_extended.append(pandas.DataFrame([r]))
+            r["METRIC.Recall"] = np.round(safe_divide(r["TRUTH.TP"], r["TRUTH.TOTAL"]), decimals)
+            r["METRIC.Precision"] = np.round(safe_divide(r["QUERY.TP"], (r["QUERY.TP"] + r["QUERY.FP"])), decimals)
+            r["METRIC.Frac_NA"] = np.round(safe_divide(r["QUERY.UNK"], r["QUERY.TOTAL"]), decimals)
+            r["METRIC.F1_Score"] = np.round(safe_divide(2 * r["METRIC.Precision"] * r["METRIC.Recall"], (r["METRIC.Precision"] + r["METRIC.Recall"])), decimals)
+            happy_extended = pandas.concat([happy_extended, pandas.DataFrame([r])], ignore_index=True)
 
         # re-configure counters
         start = end
@@ -420,9 +432,29 @@ def extended_from_featuretable(f, args):
 
 
 # noinspection PyBroadException
-def main():
+def coverage_normalization(bam_paths: list[str]) -> dict[str, float] | None:
+    """Compute caller depth factors from mean per-chromosome BAM coverage."""
+    bams = []
+    md = None
+    for x in bam_paths:
+        bams.append(bamStats(x))
+
+    if bams:
+        bres = pandas.concat(bams).groupby('CHROM').mean()
+
+        md = {}
+
+        for x in bres.index:
+            logging.info('Mean coverage on %s is %f' % (x, bres.loc[x]['COVERAGE']))
+            md[x] = float(bres.loc[x]['COVERAGE']) * 3.0
+
+    return md
+
+
+def main() -> None:
 
     args = parse_args()
+    Tools.init()
 
     if args.scratch_prefix:
         scratch = os.path.abspath(args.scratch_prefix)
@@ -433,19 +465,7 @@ def main():
 
     logging.info("Scratch path is %s" % scratch)
     try:
-        bams = []
-        md = None
-        for x in args.bams:
-            bams.append(bamStats(x))
-
-        if bams:
-            bres = pandas.concat(bams).groupby("CHROM").mean()
-
-            md = {}
-
-            for x in bres.index:
-                logging.info("Mean coverage on %s is %f" % (x, bres.loc[x]["COVERAGE"]))
-                md[x] = float(bres.loc[x]["COVERAGE"]) * 3.0
+        md = coverage_normalization(args.bams)
 
         logging.info("Normalizing/reading inputs")
 
@@ -535,7 +555,7 @@ def main():
             fpclasses.addFromBed(args.FP, "FP", args.fixchr_truth)
 
         # split VCF into FP, UNK and AMBI
-        toProcess = gzip.open(rununiquepath, "rb")
+        toProcess = gzip.open(rununiquepath, "rt", encoding="utf-8")
         for entry in toProcess:
             if entry[0] == '#':
                 continue
@@ -628,39 +648,39 @@ def main():
         metrics_output = makeMetricsObject("som.py.comparison")
 
         if args.ambi and args.explain_ambiguous:
-            ac = list(ambiClasses.iteritems())
+            ac = list(ambiClasses.items())
             if ac:
                 ambie = pandas.DataFrame(ac, columns=["class", "count"])
-                ambie.sort_values(["class"], inplace=True)
+                ambie = ambie.sort_values(["class"])
                 pandas.set_option("display.max_rows", 1000)
                 pandas.set_option("display.max_columns", 1000)
                 pandas.set_option("display.width", 1000)
-                pandas.set_option("display.height", 1100)
+                pandas.set_option("display.max_rows", 1100)
                 logging.info("FP/ambiguity classes with info (multiple classes can "
                              "overlap):\n" + ambie.to_string(index=False))
                 # in default mode, print result summary to stdout
                 if not args.quiet and not args.verbose:
-                    print "FP/ambiguity classes with info (multiple classes can " \
-                          "overlap):\n" + ambie.to_string(index=False)
+                    print("FP/ambiguity classes with info (multiple classes can " \
+                          "overlap):\n" + ambie.to_string(index=False))
                 ambie.to_csv(args.output + ".ambiclasses.csv")
                 metrics_output["metrics"].append(dataframeToMetricsTable("ambiclasses", ambie))
             else:
                 logging.info("No ambiguous variants.")
 
-            ar = list(ambiReasons.iteritems())
+            ar = list(ambiReasons.items())
             if ar:
                 ambie = pandas.DataFrame(ar, columns=["reason", "count"])
-                ambie.sort_values(["reason"], inplace=True)
+                ambie = ambie.sort_values(["reason"])
                 pandas.set_option("display.max_rows", 1000)
                 pandas.set_option("display.max_columns", 1000)
                 pandas.set_option("display.width", 1000)
-                pandas.set_option("display.height", 1100)
+                pandas.set_option("display.max_rows", 1100)
                 logging.info("Reasons for defining as ambiguous (multiple reasons can overlap):\n" + ambie.to_string(
                     formatters={'reason': '{{:<{}s}}'.format(ambie['reason'].str.len().max()).format}, index=False))
                 # in default mode, print result summary to stdout
                 if not args.quiet and not args.verbose:
-                    print "Reasons for defining as ambiguous (multiple reasons can overlap):\n" + ambie.to_string(
-                        formatters={'reason': '{{:<{}s}}'.format(ambie['reason'].str.len().max()).format}, index=False)
+                    print("Reasons for defining as ambiguous (multiple reasons can overlap):\n" + ambie.to_string(
+                        formatters={'reason': '{{:<{}s}}'.format(ambie['reason'].str.len().max()).format}, index=False))
                 ambie.to_csv(args.output + ".ambireasons.csv")
                 metrics_output["metrics"].append(dataframeToMetricsTable("ambireasons", ambie))
             else:
@@ -682,8 +702,8 @@ def main():
             # ... which we don't need to do since tps1 and tps2 have the same ordering
 
             logging.info("Sorting...")
-            tps.sort_values(["CHROM", "POS"], inplace=True)
-            tps2.sort_values(["CHROM", "POS"], inplace=True)
+            tps = tps.sort_values(["CHROM", "POS"])
+            tps2 = tps2.sort_values(["CHROM", "POS"])
             tps = tps.reset_index(drop=True)
             tps2 = tps2.reset_index(drop=True)
 
@@ -700,7 +720,7 @@ def main():
             if not args.disable_order_check:
                 logging.info("Checking order %i / %i" % (len1, len2))
 
-                for x in xrange(0, len1):
+                for x in range(0, len1):
                     for a in ["CHROM", "POS"]:
                         if tps.loc[x][a] != tps2.loc[x][a]:
                             raise Exception("Cannot merge TP features, inputs are out of order at %s / %s" % (
@@ -738,7 +758,7 @@ def main():
             for col in list(fns):
                 if col + ".truth" in tp_cols:
                     renamed[col] = col + ".truth"
-            fns.rename(columns=renamed, inplace=True)
+            fns = fns.rename(columns=renamed)
 
             featurelist = [tpc, fps, fns, ambs]
 
@@ -779,11 +799,11 @@ def main():
                 roc_table = args.roc.from_table(featuretable)
                 roc_table.to_csv(args.output + ".roc.csv", float_format='%.8f')
 
-            featuretable["FILTER"].fillna("", inplace=True)
-            featuretable.ix[featuretable["REF"].str.len() < 1, "absent"] = True
-            featuretable.ix[featuretable["tag"] == "FN", "REF"] = featuretable.ix[featuretable["tag"] == "FN",
+            featuretable["FILTER"] = featuretable["FILTER"].fillna("")
+            featuretable.loc[featuretable["REF"].str.len() < 1, "absent"] = True
+            featuretable.loc[featuretable["tag"] == "FN", "REF"] = featuretable.loc[featuretable["tag"] == "FN",
                                                                                   "REF.truth"]
-            featuretable.ix[featuretable["tag"] == "FN", "ALT"] = featuretable.ix[featuretable["tag"] == "FN",
+            featuretable.loc[featuretable["tag"] == "FN", "ALT"] = featuretable.loc[featuretable["tag"] == "FN",
                                                                                   "ALT.truth"]
             af_t_feature = args.af_strat_truth
             af_q_feature = args.af_strat_query
@@ -792,13 +812,13 @@ def main():
                 featuretable_this_type = featuretable
 
                 if args.count_filtered_fn:
-                    res.ix[res["type"] == vtype, "fp.filtered"] = featuretable_this_type[
+                    res.loc[res["type"] == vtype, "fp.filtered"] = featuretable_this_type[
                         (featuretable_this_type["tag"] == "FP") & (featuretable_this_type["FILTER"] != "")].shape[0]
-                    res.ix[res["type"] == vtype, "tp.filtered"] = featuretable_this_type[
+                    res.loc[res["type"] == vtype, "tp.filtered"] = featuretable_this_type[
                         (featuretable_this_type["tag"] == "TP") & (featuretable_this_type["FILTER"] != "")].shape[0]
-                    res.ix[res["type"] == vtype, "unk.filtered"] = featuretable_this_type[
+                    res.loc[res["type"] == vtype, "unk.filtered"] = featuretable_this_type[
                         (featuretable_this_type["tag"] == "UNK") & (featuretable_this_type["FILTER"] != "")].shape[0]
-                    res.ix[res["type"] == vtype, "ambi.filtered"] = featuretable_this_type[
+                    res.loc[res["type"] == vtype, "ambi.filtered"] = featuretable_this_type[
                         (featuretable_this_type["tag"] == "AMBI") & (featuretable_this_type["FILTER"] != "")].shape[0]
 
                 if args.af_strat:
@@ -904,7 +924,7 @@ def main():
                     h1_chrs = h1["tabix"]["chromosomes"]
 
                     if not h1_chrs:
-                        logging.warn("No contigs in truth file")
+                        logging.warning("No contigs in truth file")
                         h1_chrs = []
 
                     if len(h1_chrs) > 0:
@@ -928,7 +948,7 @@ def main():
             res["ambiguous.filtered"] = (res["ambi"] - res["ambi.filtered"]) / res["total.query"]
 
         # HAP-162 remove inf values
-        res.replace([np.inf, -np.inf], 0)
+        res = res.replace([np.inf, -np.inf], 0)
 
         metrics_output["metrics"].append(dataframeToMetricsTable("result", res))
         vstring = "som.py-%s" % Tools.version
@@ -936,7 +956,7 @@ def main():
         logging.info("\n" + res.to_string())
         # in default mode, print result summary to stdout
         if not args.quiet and not args.verbose:
-            print "\n" + res.to_string()
+            print("\n" + res.to_string())
 
         res["sompyversion"] = vstring
 

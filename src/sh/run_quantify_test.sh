@@ -33,14 +33,21 @@ if [[ $? != 0 ]]; then
 fi
 
 # This script checks if the summary precision / recall figures have changed significantly
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "All summary differs! -- diff ${TMP_OUT}.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv"
 	exit 1
 fi
 
 # This script checks if the extended precision / recall figures have changed significantly
-${PYTHON} ${DIR}/compare_extended.py ${TMP_OUT}.extended.csv ${DIR}/../../example/happy/expected-qfy.extended.csv
+${PYTHON} ${DIR}/compare_extended.py ${TMP_OUT}.extended.csv ${DIR}/../../example/happy/expected-qfy.extended.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.extended.csv").legacy-compare.log" 2>&1
+LEGACY_EXTENDED_STATUS=$?
+printf '%s\n' "$LEGACY_EXTENDED_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.extended.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_extended.py ${TMP_OUT}.extended.csv ${DIR}/../../example/happy/expected-qfy.extended.csv --schema ga4gh-metrics-v2
 if [[ $? != 0 ]]; then
 	echo "All extended differs! -- diff ${TMP_OUT}.extended.csv ${DIR}/../../example/happy/expected-qfy.extended.csv"
 	exit 1
@@ -77,7 +84,11 @@ if [[ $? != 0 ]] || [[ ! -s ${TMP_OUT}.qfy.m.json ]]; then
 fi
 
 # This script checks if the summary precision / recall figures have changed significantly
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.qfy.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.qfy.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.qfy.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.qfy.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.qfy.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "All summary differs! -- diff ${TMP_OUT}.qfy.summary.csv ${DIR}/../../example/happy/expected-qfy.summary.csv"
 	exit 1

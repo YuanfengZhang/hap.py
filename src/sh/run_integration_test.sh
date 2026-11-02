@@ -8,6 +8,11 @@ set +e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . ${DIR}/detect_vars.sh
 
+# Independent fix contract; does not replace the historical golden comparisons below.
+CONF_UNION_ROOT=$(mktemp -d "${TMPDIR}/happy-conf-union.XXXXXXXXXX") || exit 1
+"${PYTHON}" -I "${DIR}/run_conf_union_regression.py" \
+    --bin-dir "${HCDIR}" --work-dir "${CONF_UNION_ROOT}/results" || exit 1
+
 echo "Integration test for ${HCVERSION} from ${HCDIR}"
 
 cat ${DIR}/../../example/integration/integrationtest_lhs.vcf | bgzip > ${DIR}/../../example/integration/integrationtest_lhs.vcf.gz
@@ -138,13 +143,23 @@ if [[ $? != 0 ]]; then
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/integration/integrationtest.summary.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/integration/integrationtest.summary.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.summary.csv ${DIR}/../../example/integration/integrationtest.summary.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "Summary differs! ${TMP_OUT}.summary.csv ${DIR}/../../example/integration/integrationtest.summary.csv"
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.pass.summary.csv ${DIR}/../../example/integration/integrationtest.summary.pass.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.pass.summary.csv ${DIR}/../../example/integration/integrationtest.summary.pass.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.pass.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.pass.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.pass.summary.csv ${DIR}/../../example/integration/integrationtest.summary.pass.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "Pass summary differs! ${TMP_OUT}.pass.summary.csv ${DIR}/../../example/integration/integrationtest.summary.pass.csv"
 	exit 1
@@ -176,7 +191,12 @@ if [[ $? != 0 ]]; then
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.performance.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.performance.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "Pass summary differs! vimdiff ${TMP_OUT}.performance.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv"
 	exit 1
@@ -208,7 +228,12 @@ if [[ $? != 0 ]]; then
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.t1.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.t1.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.performance.t1.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.performance.t1.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.t1.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "Pass summary differs! vimdiff ${TMP_OUT}.performance.t1.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv"
 	exit 1
@@ -240,7 +265,12 @@ if [[ $? != 0 ]]; then
 	exit 1
 fi
 
-${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.bcf.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv
+mkdir -p "${TMPDIR}/summary-legacy-evidence" || exit 1
+
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.bcf.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.performance.bcf.summary.csv").legacy-compare.log" 2>&1
+LEGACY_SUMMARY_STATUS=$?
+printf '%s\n' "$LEGACY_SUMMARY_STATUS" > "${TMPDIR}/summary-legacy-evidence/$(basename "${TMP_OUT}.performance.bcf.summary.csv").legacy-compare.exit-code"
+${PYTHON} ${DIR}/compare_summaries.py ${TMP_OUT}.performance.bcf.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv --schema ga4gh-summary-v2
 if [[ $? != 0 ]]; then
 	echo "Pass summary differs! vimdiff ${TMP_OUT}.performance.bcf.summary.csv ${DIR}/../../example/integration/integrationtest.performance.summary.csv"
 	exit 1

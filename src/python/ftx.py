@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-# coding=utf-8
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -33,7 +35,9 @@ import shutil
 import pandas
 
 scriptDir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'python27')))
+sys.path.append(os.path.abspath(os.path.join(scriptDir, '..', 'lib', 'hap.py')))
+# CLI siblings (pre/qfy) must remain importable under Python isolated mode.
+sys.path.insert(0, scriptDir)
 
 import Tools
 from Tools.bcftools import runBcftools, preprocessVCF
@@ -65,7 +69,7 @@ def main():
                         help="Use to include failing variants in comparison.")
 
     parser.add_argument("--feature-table", dest="features", default="generic",
-                        help="Select a feature table to output. Options are: %s" % str(Somatic.FeatureSet.sets.keys()))
+                        help="Select a feature table to output. Options are: %s" % str(list(Somatic.FeatureSet.sets.keys())))
 
     parser.add_argument("--feature-label", dest="label", default=None,
                         help="We will output a lable column, this value will go in there -- default is "
@@ -74,7 +78,7 @@ def main():
     parser.add_argument("--bam", dest="bams", default=[], action="append",
                         help="pass one or more BAM files for feature table extraction")
 
-    parser.add_argument("-r", "--reference", dest="ref", default=Tools.defaultReference(),
+    parser.add_argument("-r", "--reference", dest="ref", default=None,
                         help="Specify a reference file for normalization.")
 
     parser.add_argument("--normalize", dest="normalize", default=False, action="store_true",
@@ -84,6 +88,8 @@ def main():
                         help="Replace numeric chromosome names in the query by chr*-type names")
 
     args = parser.parse_args()
+    args.ref = Tools.defaultReference(args.ref)
+    Tools.init()
 
     scratch = tempfile.mkdtemp()
 

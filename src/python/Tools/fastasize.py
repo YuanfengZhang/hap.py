@@ -1,5 +1,7 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
+# This is a modified version of the original software.
+# The original authors' notice follows.
 # Copyright (c) 2010-2015 Illumina, Inc.
 # All rights reserved.
 #
@@ -26,7 +28,7 @@ import os
 import logging
 import tempfile
 import subprocess
-import pipes
+import shlex
 import json
 import re
 
@@ -60,11 +62,11 @@ def fastaNonNContigLengths(fastafile):
     tf.close()
 
     try:
-        subprocess.check_call("fastainfo %s %s" % (pipes.quote(fastafile), pipes.quote(tf.name)), shell=True)
+        subprocess.check_call("fastainfo %s %s" % (shlex.quote(fastafile), shlex.quote(tf.name)), shell=True)
         with open(tf.name) as f:
             fasta_info = json.load(f)
 
-        for k, v in fasta_info.iteritems():
+        for k, v in fasta_info.items():
             fastacontiglengths[k] = int(v["n_trimmed_length"])
     finally:
         os.unlink(tf.name)
@@ -75,13 +77,13 @@ def fastaNonNContigLengths(fastafile):
 def calculateLength(fastacontiglengths, locations):
     """ Calculate total length of contigs overlapping a set of locations """
     if not locations:
-        return sum([fastacontiglengths[x] for x in fastacontiglengths.keys()])
+        return sum([fastacontiglengths[x] for x in list(fastacontiglengths.keys())])
 
     total_length = 0
     for l in re.split("[ ,]", locations):
         contig, _, pos = l.partition(":")
         if contig not in fastacontiglengths:
-            logging.warn("Contig %s is not present in input set %s; setting length to 0" %
+            logging.warning("Contig %s is not present in input set %s; setting length to 0" %
                             (contig, str(fastacontiglengths)))
             length = 0
             continue
