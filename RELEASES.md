@@ -1,4 +1,12 @@
 # Hap.py Release Notes / Change Log
+
+## v0.3.16-alpha
+* Customized alpha for [nf-core/variantbenchmarking](https://github.com/nf-core/variantbenchmarking).
+* Migrated from Python 2 to Python 3 and modernized dependencies and container builds.
+* Fixed reference metadata, GT/AD safety, duplicate records, and metric edge cases; added regression coverage.
+* Added optional invalid-record quarantine (`--output-invalid`) and updated usage documentation.
+* Alpha release: validate results with your own inputs; full historical-suite equivalence is not established.
+
 ## v0.3.15
 * Updated rtgtools to v3.12.1
 * Defect remains: https://jira.illumina.com/browse/HAP-373. Use stable som.py v0.3.10.
