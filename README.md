@@ -1,49 +1,43 @@
 Haplotype Comparison Tools
 ==========================
 
-Peter Krusche <pkrusche@illumina.com>
+> [!IMPORTANT]
+> This is a customized version of hap.py for [nf-core/variantbenchmarking](https://github.com/nf-core/variantbenchmarking), addressing upstream issues and improving compatibility with Python 3 and modern dependencies.
+> The original version can be found [here](https://github.com/Illumina/hap.py).
 
-This is a set of programs based on [htslib](https://github.com/samtools/htslib)
-to benchmark variant calls against gold standard truth datasets.
+Original author: Peter Krusche <pkrusche@illumina.com>
 
-To compare a VCF against a gold standard dataset, use the following commmand line
-to perform genotype-level haplotype comparison.
-
-```bash
-hap.py truth.vcf query.vcf -f confident.bed -o output_prefix -r reference.fa
-```
-
-We also have a script to perform comparisons only based on chromosome, position,
-and allele identity. This comparison will not resolve haplotypes and only verify
-that the same alleles were observed at the same positions (e.g. for comparison
-of somatic callsets).
+These tools benchmark variant calls against gold-standard truth datasets using
+[HTSlib](https://github.com/samtools/htslib). This customized version retains the
+truth-first, query-second CLI and adds Python 3 support, compatibility fixes,
+invalid-record quarantine, and complete-record deduplication.
 
 ```bash
-som.py truth.vcf query.vcf -f confident.bed -o output_prefix -r reference.fa
+mkdir -p results/scratch
+hap.py truth.vcf.gz query.vcf.gz \
+  -r reference.fa -f confident.bed -o results/benchmark \
+  --engine vcfeval --threads 4 --scratch-prefix results/scratch -V
 ```
 
-More information can be found below in the [usage section](#usage).
+Use `--engine xcmp` for the default haplotype comparison engine. The `vcfeval`
+engine requires RTG and Java; the source-built Docker image includes them.
+See [Usage](#usage) for input requirements and current output names.
 
 ## Contents
 
-* [Motivation](#motivation)
-  * [Complex variant comparison](#complex-variant-comparison)
-  * [Variant preprocessing](#variant-preprocessing)
-  * [Variant counting](#variant-counting)
-* [Usage](#usage)
-  * [hap.py](#happy)
-  * [som.py](#sompy)
-* [Using Python 3 hap.py in variantbenchmarking](#using-python-3-happy-in-variantbenchmarking)
-* [Installation](#installation)
-  * [Docker](#docker-recommended)
-  * [Helper script](#helper-script)
-  * [Compiling from source with CMake](#compiling-from-source-with-cmake)
-* [System requirements](#system-requirements)
-  * [Hardware](#hardware)
-  * [Linux](#linux)
-  * [OS X](#os-x)
-  * [Windows](#windows)
-  * [Other requirements](#other-requirements)
+- [Motivation](#motivation)
+  - [Complex variant comparison](#complex-variant-comparison)
+  - [Variant preprocessing](#variant-preprocessing)
+  - [Variant counting](#variant-counting)
+- [Usage](#usage)
+  - [hap.py](#happy)
+  - [pre.py](#prepy)
+  - [som.py](#sompy)
+- [Workflow integration](#workflow-integration)
+- [Installation](#installation)
+  - [Docker](#docker)
+  - [Source installation](#source-installation)
+- [System requirements](#system-requirements)
 
 ## Motivation
 ### Complex variant comparison
@@ -201,217 +195,206 @@ Finally, we produce input data for ROC and precision/recall curves. An
 
 ## Usage
 
-The main two tools are hap.py (diploid precision/recall evaluation) and som.py
-(somatic precision/recall evaluation -- this ignores the GT and just checks for
-presence of alleles). Other tools are qfy.py (which just executes the quantification
-step of the analysis pipeline, this requires a
-[GA4GH-intermediate](https://github.com/ga4gh/benchmarking-tools/) VCF file), and
-[pre.py](doc/normalisation.md), which is hap.py's input cleaning and
-variant normalisation step.
+Examples assume an installed toolchain with its `bin` directory on `PATH`.
+Run `hap.py --help`, `pre.py --help`, or `som.py --help` for the current options.
+Do not invoke the source scripts with Python 2.
 
-Here are some small example command lines. Advanced features like confident call
- / ambiguity / FP regions are also available, see the documentation for each
- tool for these.
-
-Below, we assume that the code has been installed to the directory `${HAPPY}`.
+Prepare a reference FASTA with its adjacent `.fai`, sorted BGZF-compressed VCFs
+with TBI/CSI indexes, and a confident-region BED. Reference assembly and contig
+names must match the VCFs. BED coordinates are zero-based and half-open. Select
+the intended sample before benchmarking multi-sample inputs. Reference genomes
+and benchmark datasets are not bundled with the image.
 
 ### hap.py
 
-See also [doc/happy.md](doc/happy.md).
+Compare diploid genotypes and haplotypes; the first VCF is truth, the second query:
 
 ```bash
-$ ${HAPPY}/bin/hap.py  \
-      example/happy/PG_NA12878_chr21.vcf.gz \
-      example/happy/NA12878_chr21.vcf.gz \
-      -f example/happy/PG_Conf_chr21.bed.gz \
-      -o test
-$ ls test.*
-test.metrics.json  test.summary.csv
+mkdir -p results/scratch
+hap.py truth.vcf.gz query.vcf.gz \
+  -r reference.fa -f confident.bed -o results/benchmark \
+  --engine vcfeval --threads 4 --scratch-prefix results/scratch -V
 ```
 
-This example compares an example run of GATK 1.6 on NA12878 agains the Platinum
-Genomes reference dataset (***Note: this is a fairly old version of GATK, so
-don't rely on these particular numbers for competitive comparisons!***).
+- `-r`: reference FASTA; specify it explicitly for reproducible runs.
+- `-f`: confident regions; query calls outside them are classified as UNK.
+- `-o`: output prefix, not an output directory.
+- `--engine`: `xcmp` (default), `vcfeval`, `scmp-somatic`, or `scmp-distance`.
+- `-V`: write the annotated comparison VCF; it is not written by default.
+- `--roc QUAL`: select the quality field for threshold tables (QUAL is default).
+  Use `--no-roc` to disable these tables. Recall and Precision columns can be
+  used to plot a precision-recall curve; Precision is not a false-positive rate.
 
-The summary CSV file contains all high-level metrics:
+Typical reports for the command above:
 
-| Type          |  TRUTH.TOTAL|  QUERY.TOTAL | METRIC.Recall | METRIC.Precision | METRIC.Frac\_NA | TRUTH.TOTAL.TiTv\_ratio | QUERY.TOTAL.TiTv\_ratio | TRUTH.TOTAL.het\_hom\_ratio | QUERY.TOTAL.het\_hom\_ratio|
-|---------------|-------------|--------------|---------------|------------------|-----------------|-------------------------|-------------------------|-----------------------------|----------------------------|
-|INDEL          |         9124|         9905 |      0.869406 |         0.978441 |        0.194548 |                     NaN |                     NaN |                    1.463852 |                    1.209105|
-|SNP            |        52520|        48078 |      0.894478 |         0.998258 |        0.021070 |                2.081002 |                2.082603 |                    1.595621 |                    1.487599|
+```text
+results/benchmark.summary.csv
+results/benchmark.extended.csv
+results/benchmark.metrics.json.gz
+results/benchmark.roc.all.csv.gz
+results/benchmark.vcf.gz
+```
 
-These numbers tell us the SNP and indel recall of our query VCF against the
-truth dataset. See [doc/happy.md](doc/happy.md) for more documentation and some
-advice for their interpretation.
+Additional stratified ROC tables and VCF indexes may also be produced. Counts and
+metrics depend on the inputs and selected options; historical example numbers
+are not expected results for this version. Recall uses `TRUTH.TP / (TRUTH.TP +
+TRUTH.FN)`; Precision uses `QUERY.TP / (QUERY.TP + QUERY.FP)`, excluding UNK.
+Zero denominators are reported as zero. See [the evaluation guide](doc/happy.md).
+
+To quarantine supported invalid GT/AD records and evaluate the remaining records:
+
+```bash
+hap.py truth.vcf.gz query.vcf.gz \
+  -r reference.fa -f confident.bed -o results/benchmark \
+  --output-invalid --threads 4 --scratch-prefix results/scratch
+```
+
+This writes `results/benchmark.truth.invalid.vcf.gz` and
+`results/benchmark.query.invalid.vcf.gz`, each with an adjacent `.reasons.tsv`.
+Quarantine scans both inputs before filtering or region selection. Excluding a
+record does not mask the corresponding position in the other input and can
+change benchmark metrics. Parsing, header, compression, and I/O errors still
+fail; an input with no valid records also fails. Existing quarantine outputs are
+not overwritten. Without this flag, invalid records are not quarantined.
+
+Final preprocessing removes complete duplicate records by default, including
+all sample and annotation fields in the comparison. Different genotypes or
+annotations are retained. `--keep-duplicates` disables final deduplication;
+with `--bcftools-norm`, it retains the historical early allele-based removal,
+so it does not guarantee preservation of every original duplicate.
+
+### pre.py
+
+Normalize one input without running evaluation:
+
+```bash
+mkdir -p results/scratch
+TMPDIR="$PWD/results/scratch" pre.py query.vcf.gz results/query.pre.vcf.gz \
+  -r reference.fa --threads 4 --output-invalid
+```
+
+The quarantine file is `results/query.pre.vcf.gz.invalid.vcf.gz`, with an adjacent
+`.reasons.tsv`. `--output-invalid` and `--keep-duplicates` have the same meanings
+as in hap.py. See [normalisation](doc/normalisation.md) for preprocessing controls.
 
 ### som.py
 
-Som.py is a simple comparison tool based on bcftools. It does not perform genotype or haplotype matching.
+Compare allele presence without genotype or haplotype matching:
 
-See [doc/sompy.md](doc/sompy.md) for more documentation.
-
-```
-${HAPPY}/bin/som.py example/sompy/PG_admix_truth_snvs.vcf.gz \
-                    example/sompy/strelka_admix_snvs.vcf.gz \
-                    -f example/sompy/FP_admix.bed.gz \
-                    -o test
-[...]
-      type  total.truth  total.query     tp     fp   fn    unk  ambi    recall   recall2  precision        na  ambiguous
-1     SNVs        16235        47530  15573  14698  662  17259     0  0.959224  0.959224   0.514453  0.363118          0
-3  records        16235        47779  15573  14737  662  17469     0  0.959224  0.959224   0.513791  0.365621          0
-
-ls test.*
-test.stats.csv
+```bash
+som.py truth.vcf.gz query.vcf.gz \
+  -r reference.fa -f confident.bed -o results/somatic
 ```
 
-The most relevant metrics are recall and precision. UNK calls are the calls that are outside the
-coverage of the truthset.
+The main report is `results/somatic.stats.csv`. Calls outside confident regions
+are UNK. See [the somatic comparison guide](doc/sompy.md). The hap.py/pre.py
+quarantine and deduplication flags are not som.py options.
 
-## Using Python 3 hap.py in variantbenchmarking
+## Workflow integration
 
-The application version is `modern-20261101`; the local image name is
-`hap.py-py3`. Override the Nextflow task containers explicitly: changing the host
-PATH does not change the container used by the workflow. Run the following
-examples from the variantbenchmarking workflow root, not this source directory.
+For [nf-core/variantbenchmarking](https://github.com/nf-core/variantbenchmarking),
+changing the host `PATH` does not replace workflow task containers. Configure
+`HAPPY_HAPPY` and `HAPPY_PREPY` to use an image built from this source revision,
+following the workflow's configuration and container-registry rules.
 
-### Singularity (Linux x86_64)
-
-Place `hap.py-py3.sif` on storage accessible to every execution node. Create
-`hap.py-py3-singularity.config` with the actual absolute image path:
+For example, use an absolute shared SIF path in a custom Nextflow configuration:
 
 ```groovy
 singularity.enabled = true
 singularity.autoMounts = true
 docker.enabled = false
+
 process {
     withName: 'HAPPY_(HAPPY|PREPY)' {
-        container = '/absolute/path/hap.py-py3.sif'
+        container = '/absolute/path/to/custom-happy.sif'
         containerOptions = '--env TMPDIR=.'
-        ext.happy_version = 'modern-20261101'
     }
 }
 ```
 
-`TMPDIR=.` uses the writable task directory instead of the read-only image.
-Inputs, the image, and the Nextflow work directory must be visible on all nodes.
-Follow site-specific bind-mount rules. Nextflow uses `singularity exec`, not the
-image runscript.
+The SIF path is a placeholder, not a supplied artifact. Set any module-specific
+version override to the actual output of `hap.py --version`, rather than copying
+a build date from documentation. Load this configuration after site settings
+with `-c`, keeping the workflow's required inputs and analysis parameters.
 
-Keep the samplesheet, reference, truth set, BED, and analysis parameters required
-by your analysis. Load the override after any site-specific configurations:
-
-```bash
-nextflow run . -profile singularity \
-  -params-file params.yaml \
-  -c hap.py-py3-singularity.config \
-  --analysis germline --variant_type small --method happy \
-  --outdir results-hap.py-py3 \
-  -work-dir work-hap.py-py3 \
-  -with-trace trace-hap.py-py3.txt
-```
-
-Supply your own `params.yaml`; it is not provided by the image. Replace existing
-output/work directory options instead of duplicating them. Use independent
-working directories for initial validation rather than reusing old task results.
-
-### Docker alternative
-
-Import the image archive and add a local alias compatible with the workflow's
-registry settings:
-
-```bash
-docker load -i hap.py-py3.tar.gz
-docker tag hap.py-py3 quay.io/local/hap.py-py3:latest
-```
-
-The `quay.io/local` alias is local only; it does not imply publication. Create
-`hap.py-py3-docker.config`:
-
-```groovy
-docker.enabled = true
-singularity.enabled = false
-process {
-    withName: 'HAPPY_(HAPPY|PREPY)' {
-        container = 'quay.io/local/hap.py-py3:latest'
-        containerOptions = '--pull=never --env TMPDIR=.'
-        ext.happy_version = 'modern-20261101'
-    }
-}
-```
-
-Use the preceding Nextflow example with `-profile docker` and
-`-c hap.py-py3-docker.config`. Preload the image on every execution node. Other
-workflow tools retain their original images. Do not combine this override with
-an older development-image override.
-
-Only `HAPPY_HAPPY` and `HAPPY_PREPY` are replaced, not som.py or standalone RTG
-modules. Engine selection still comes from workflow arguments. To request
-vcfeval, add the following selector inside the same `process` block, retaining
-other arguments required by your analysis:
-
-```groovy
-    withName: 'HAPPY_HAPPY' {
-        ext.args = '--engine=vcfeval --leftshift'
-    }
-```
-
-Inspect task `.command.run` files and version records to confirm the actual
-image and application version. `HAPPY_PREPY` runs only when the selected
-preprocessing mode requires it. Targeted three-engine image acceptance does not
-establish full workflow or historical golden-suite equivalence. Validate your
-own inputs, references, and stratifications. See the
-[container build and usage guide](doc/modern-build.md).
+Images, inputs, and work directories must be accessible on every execution node.
+For Docker, use an image reference available to each node and compatible with
+the workflow's registry settings. Nextflow uses `singularity exec`, not the SIF
+runscript. Use a writable scratch directory and retain the engine arguments
+required by the analysis. Verify task `.command.run` files and version reports;
+use a fresh work directory when validating a changed toolchain. Tool-level tests
+do not establish full workflow equivalence.
 
 ## Installation
 
-The modernization build uses **CPython 3.14**, an explicitly provisioned dependency
-prefix, and version-independent private modules in `prefix/lib/hap.py`.
-Configuration does not download software or execute Git.
+### Docker
 
-### Docker (recommended)
-
-The rebuilt `hap.py-py3` image targets Linux x86_64. It has not been published
-to a public registry. Transfer it with `docker save` / `docker load` before use;
-do not attempt to pull this local tag. See the
-[container build and usage guide](doc/modern-build.md) for build instructions,
-mounts, and validation limitations.
+Build the dependency image first, then the application image. Choose your own
+application version and image tag; neither denotes a published release here.
+The following proxy address is an example: replace it with a reachable proxy
+for your build environment. The dependency Dockerfile uses this proxy for
+network downloads; the application build runs without network access.
 
 ```bash
-mkdir -p results/tmp
-docker run --rm --pull never --network none \
-  --user "$(id -u):$(id -g)" --workdir /out \
-  -e TMPDIR=/out/tmp -e RTG_MEM=4G \
-  -v "$PWD/data:/data:ro" -v "$PWD/results:/out" \
-  hap.py-py3 \
-  hap.py /data/truth.vcf.gz /data/query.vcf.gz \
-  -r /data/reference.fa -f /data/confident.bed \
-  -o /out/benchmark --engine vcfeval --threads 4 --scratch-prefix /out/tmp
+proxychains -q docker build --network host \
+  -f Dockerfile.dependencies -t custom-happy-dependencies:build \
+  --build-arg BUILD_PROXY=socks4://127.0.0.1:9050 \
+  --build-arg 'PROXYCHAINS_SERVER=socks4 127.0.0.1 9050' .
+
+docker build --network none \
+  --build-arg DEPENDENCY_IMAGE=custom-happy-dependencies:build \
+  --build-arg HAPPY_VERSION="$(git rev-parse --short HEAD)" \
+  -t custom-happy:build .
 ```
 
-The `data` directory must contain a matching reference FASTA/FAI, truth and query
-BGZF VCFs with indexes, and a confident-region BED. Known historical golden-suite
-differences remain; successful builds and targeted acceptance do not imply that
-all historical tests pass.
-
-### Helper script
-
-`external/bootstrap.sh` explicitly provisions dependencies; `install.py` installs
-to a new versioned directory. Configuration performs no downloads or implicit
-dependency installation. Preserve absolute dependency prefixes when installing
-on the host: moving the installation directory alone is insufficient. See the
-container guide for details.
-
-### Compiling from source with CMake
+The image has no ENTRYPOINT: specify `hap.py` after the image name when replacing
+the default help command. For example, from a directory containing `data/`:
 
 ```bash
-cmake -S . -B .work/build   -DHAPPY_DEPENDENCY_PREFIX="$PWD/.pixi/envs/default"   -DPython3_EXECUTABLE=/absolute/path/to/python3.14   -DHAPLOTYPES_VERSION=modernization -DCMAKE_BUILD_TYPE=Release
-cmake --build .work/build --parallel 16
+mkdir -p results/scratch
+docker run --rm --pull never --network none \
+  --user "$(id -u):$(id -g)" --workdir /out \
+  -e TMPDIR=/out/scratch -e RTG_MEM=4G \
+  -v "$PWD/data:/data:ro" -v "$PWD/results:/out" \
+  custom-happy:build \
+  hap.py /data/truth.vcf.gz /data/query.vcf.gz \
+  -r /data/reference.fa -f /data/confident.bed \
+  -o /out/benchmark --engine vcfeval --threads 4 \
+  --scratch-prefix /out/scratch -V
+```
+
+Mount the reference FASTA/FAI, VCFs/indexes, and BED under `data/`. A SIF built
+using this repository's definitions has a hap.py runscript, so
+`singularity run IMAGE.sif TRUTH QUERY ...` takes hap.py arguments directly;
+`singularity exec IMAGE.sif hap.py ...` explicitly selects the executable.
+Adapt the definition's base image to the image you built before creating a SIF.
+
+### Source installation
+
+The build uses **CPython 3.14**, an explicitly provisioned dependency prefix, and
+private modules in `prefix/lib/hap.py`. `external/bootstrap.sh` provisions the
+modern dependencies; `install.py --help` documents installation options.
+Configuration does not download software or execute Git. See the
+[build guide](doc/modern-build.md) for dependency provisioning details; adapt
+example paths and tags to your environment.
+
+With dependencies already provisioned:
+
+```bash
+cmake -S . -B .work/build \
+  -DHAPPY_DEPENDENCY_PREFIX=/absolute/path/to/dependencies \
+  -DPython3_EXECUTABLE=/absolute/path/to/python3.14 \
+  -DHAPLOTYPES_VERSION="$(git rev-parse --short HEAD)" \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build .work/build --parallel 4
 cmake --install .work/build --prefix "$PWD/install"
 ```
 
-For an independent instrumented build use another build directory and
-`-DCMAKE_BUILD_TYPE=Debug -DHAPPY_SANITIZERS=ON`. Never reuse a noninstrumented
-build cache for sanitizer acceptance.
+Preserve the absolute dependency prefixes: moving the installation directory
+alone is insufficient. For a sanitizer build, use a separate build directory
+with `-DCMAKE_BUILD_TYPE=Debug -DHAPPY_SANITIZERS=ON`. Known historical golden-suite
+differences remain; a successful build or targeted test run does not imply that
+all historical integration tests pass.
 
 ## System requirements
 
