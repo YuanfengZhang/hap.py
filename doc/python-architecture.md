@@ -53,7 +53,7 @@ sum of all concurrently running process memory.
 
 ## Remaining work
 
-This is an incremental refactor, not full runtime modernization. Legacy broad
+This is an incremental refactor, not full runtime compatibility update. Legacy broad
 exception handling, long caller extraction functions, mutable argparse state
 remain outside this targeted refactor. Quantification now uses literal argv; RTG commands execute without a shell. No wholesale
 formatting, dependency upgrade, engine hierarchy, or golden-data refresh is

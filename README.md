@@ -2,7 +2,7 @@ Haplotype Comparison Tools
 ==========================
 
 > [!IMPORTANT]
-> This is a customized version of hap.py for [nf-core/variantbenchmarking](https://github.com/nf-core/variantbenchmarking), addressing upstream issues and improving compatibility with Python 3 and modern dependencies.
+> This is a customized version of hap.py for [nf-core/variantbenchmarking](https://github.com/nf-core/variantbenchmarking), addressing upstream issues and improving compatibility with Python 3 and current dependencies.
 > The original version can be found [here](https://github.com/Illumina/hap.py).
 
 Original author: Peter Krusche <pkrusche@illumina.com>
@@ -329,17 +329,16 @@ do not establish full workflow equivalence.
 
 ### Docker
 
-Build the dependency image first, then the application image. Choose your own
-application version and image tag; neither denotes a published release here.
-The following proxy address is an example: replace it with a reachable proxy
-for your build environment. The dependency Dockerfile uses this proxy for
-network downloads; the application build runs without network access.
+Use the published image:
 
 ```bash
-proxychains -q docker build --network host \
-  -f Dockerfile.dependencies -t custom-happy-dependencies:build \
-  --build-arg BUILD_PROXY=socks4://127.0.0.1:9050 \
-  --build-arg 'PROXYCHAINS_SERVER=socks4 127.0.0.1 9050' .
+docker pull ghcr.io/yuanfengzhang/hap.py:v0.3.16-alpha
+```
+
+To build from source, build the dependency image before the application image:
+
+```bash
+docker build -f Dockerfile.dependencies -t custom-happy-dependencies:build .
 
 docker build --network none \
   --build-arg DEPENDENCY_IMAGE=custom-happy-dependencies:build \
@@ -356,7 +355,7 @@ docker run --rm --pull never --network none \
   --user "$(id -u):$(id -g)" --workdir /out \
   -e TMPDIR=/out/scratch -e RTG_MEM=4G \
   -v "$PWD/data:/data:ro" -v "$PWD/results:/out" \
-  custom-happy:build \
+  ghcr.io/yuanfengzhang/hap.py:v0.3.16-alpha \
   hap.py /data/truth.vcf.gz /data/query.vcf.gz \
   -r /data/reference.fa -f /data/confident.bed \
   -o /out/benchmark --engine vcfeval --threads 4 \
@@ -373,9 +372,9 @@ Adapt the definition's base image to the image you built before creating a SIF.
 
 The build uses **CPython 3.14**, an explicitly provisioned dependency prefix, and
 private modules in `prefix/lib/hap.py`. `external/bootstrap.sh` provisions the
-modern dependencies; `install.py --help` documents installation options.
+current dependencies; `install.py --help` documents installation options.
 Configuration does not download software or execute Git. See the
-[build guide](doc/modern-build.md) for dependency provisioning details; adapt
+[build guide](doc/container-build.md) for dependency provisioning details; adapt
 example paths and tags to your environment.
 
 With dependencies already provisioned:

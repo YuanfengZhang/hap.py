@@ -40,7 +40,7 @@ def main() -> None:
             prefix: Path = work / f'{engine}-{threads}'
             command: list[str] = [str(args.bin_dir.resolve() / 'hap.py'), str(truth), str(query),
                 '-r', str(reference), '-f', str(bed), '-o', str(prefix), '--engine', engine,
-                '--threads', str(threads), '--scratch-prefix', str(work)]
+                '--threads', str(threads), '--scratch-prefix', str(work), '-V']
             with prefix.with_suffix('.log').open('w') as log:
                 subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
             with Path(str(prefix) + '.summary.csv').open() as stream:

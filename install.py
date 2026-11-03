@@ -82,7 +82,7 @@ def main() -> None:
             parser.error('Virtual environment exists; use --python-virtualenv-update')
         subprocess.run([interpreter, '-m', 'venv', str(venv)], check=True, env=env)
         interpreter = str(venv / 'bin' / 'python')
-        subprocess.run(['proxychains', '-q', interpreter, '-I', '-m', 'pip', '--isolated', 'install',
+        subprocess.run([interpreter, '-I', '-m', 'pip', '--isolated', 'install',
                         '--index-url', 'https://pypi.org/simple', '--require-hashes',
                         '-r', str(source / 'external' / 'python314-linux64.requirements.lock')], check=True, env=env)
     # Validate the complete locked runtime closure, including system mode.

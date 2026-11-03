@@ -51,7 +51,7 @@ else
     bash "$ROOT/external/build-openssl.sh" "$OPENSSL_SOURCE" "$PREFIX/build-openssl" "$SSL_PREFIX" "$CC"
 fi
 bash "$ROOT/external/build-python314.sh" "$PYTHON_SOURCE" "$SSL_PREFIX" "$PREFIX/build-python" "$PREFIX/python" "$CC" "$ROOT/.pixi/envs/default"
-proxychains -q "$PREFIX/python/bin/python3.14" -I -m pip --isolated install --index-url https://pypi.org/simple --require-hashes -r "$ROOT/external/python314-linux64.requirements.lock"
+"$PREFIX/python/bin/python3.14" -I -m pip --isolated install --index-url https://pypi.org/simple --require-hashes -r "$ROOT/external/python314-linux64.requirements.lock"
 "$PYTHON_BOOTSTRAP" -I "$ROOT/external/provision-rtg6.py" --work "$PREFIX/rtg6" --java-home "$JAVA_HOME" \
     --cmake "$ROOT/.pixi/envs/default/bin/cmake" --cc "$CC" --jobs "$HARNESS_JOBS"
 printf 'Python: %s\nDependencies: %s\nToolchain: %s\nRTG: %s\nJAVA_HOME: %s\n' "$PREFIX/python/bin/python3.14" "$ROOT/.pixi/envs/default" "$TOOLCHAIN" "$PREFIX/rtg6/rtg-build/install" "$JAVA_HOME"

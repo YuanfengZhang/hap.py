@@ -1,5 +1,5 @@
 [workspace]
-name = "happy-modern"
+name = "happy-py3"
 channels = ["conda-forge", "bioconda"]
 platforms = ["linux-64"]
 

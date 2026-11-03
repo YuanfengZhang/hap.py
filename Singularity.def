@@ -1,12 +1,15 @@
 Bootstrap: docker-daemon
-From: hap.py-py3
+From: ghcr.io/yuanfengzhang/hap.py:v0.3.16-alpha
 
 %labels
     org.opencontainers.image.title hap.py
-    org.opencontainers.image.version modern-20261101-rebuilt
-    org.opencontainers.image.base.digest sha256:5f90f08842791827361e4f76608d8c6bbaabcadd2eea36c320feefb6388c04ab
+    org.opencontainers.image.version v0.3.16-alpha
 
 %environment
+    # SIF root is read-only; preserve an explicit override, otherwise use the work directory.
+    if [ -z "${TMPDIR:-}" ] || [ "$TMPDIR" = /opt/happy-tmp ]; then
+        export TMPDIR="$PWD"
+    fi
     export JAVA_HOME=/opt/jdk
     export PATH=/opt/happy/bin:/opt/happy-deps/bin:/opt/python/bin:$PATH
 

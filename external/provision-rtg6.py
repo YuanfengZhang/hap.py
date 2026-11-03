@@ -47,7 +47,7 @@ def main() -> None:
         if cached and cached.is_file() and hashlib.sha256(cached.read_bytes()).hexdigest() == row['sha256']:
             shutil.copyfile(cached, destination)
         else:
-            run('download-' + row['name'], ['proxychains', '-q', 'curl', '-fL', row['url'], '-o', str(destination)])
+            run('download-' + row['name'], ['curl', '-fL', row['url'], '-o', str(destination)])
         if hashlib.sha256(destination.read_bytes()).hexdigest() != row['sha256']:
             raise ValueError('Archive checksum mismatch: ' + row['name'])
     run('native-build', [sys.executable, '-I', str(root / 'build-jlibdeflate.py'),

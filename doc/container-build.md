@@ -6,7 +6,7 @@ The local image is `hap.py-py3` (`hap.py-py3:latest`). It includes Python,
 native tools, RTG, and Java. Only Linux x86_64 has been validated. The image does
 not include a whole-genome reference: mount the FASTA, adjacent `.fai`, input
 VCFs, indexes, and BED explicitly. The application version remains
-`modern-20261101`; image naming does not change application versioning.
+`v0.3.16-alpha`; image naming does not change application versioning.
 
 The rebuilt image passed targeted xcmp, vcfeval, and scmp-somatic acceptance
 with one and two threads, without network access and as a non-root user. This
@@ -79,21 +79,15 @@ representations can yield different truth and query TP counts. Sample-level
 
 ## Build from source
 
-Use sufficient Docker storage and build resources. Downloads require an
-appropriate network proxy; runtime benchmarking does not require network access.
-The following example assumes a local SOCKS4 proxy on port 9050. Adapt the
-settings to your environment; `proxychains` must be installed on the host.
-Docker Desktop networking differs from native Linux and has not been validated.
+Use sufficient Docker storage and build resources. Building dependencies requires
+network access; runtime benchmarking does not.
 
 ```bash
-proxychains -q docker build --network host \
-  -f Dockerfile.dependencies -t hap.py-dependencies:modern \
-  --build-arg BUILD_PROXY=socks4://127.0.0.1:9050 \
-  --build-arg 'PROXYCHAINS_SERVER=socks4 127.0.0.1 9050' .
+docker build -f Dockerfile.dependencies -t hap.py-dependencies:py3 .
 
 docker build --network none \
-  --build-arg DEPENDENCY_IMAGE=hap.py-dependencies:modern \
-  --build-arg HAPPY_VERSION=modern-20261101 \
+  --build-arg DEPENDENCY_IMAGE=hap.py-dependencies:py3 \
+  --build-arg HAPPY_VERSION=v0.3.16-alpha \
   -t hap.py-py3 .
 ```
 
@@ -204,3 +198,17 @@ RTG provisioning uses `provision-rtg6.py` and `build-rtg6.py`. The superseded
 HTSJDK 5 build script and its dedicated dependency lock and patch were removed;
 shared patches and legal provenance materials remain. CI printing the FASTA
 index hash records provenance; it does not compare against an expected hash.
+
+## Non-root and read-only containers
+
+Docker creates `/data` and `/opt/happy-tmp` with mode `1777`, so arbitrary UIDs
+can use the default work and temporary directories without root privileges.
+A bind mount replaces the image directory permissions: grant the running UID
+write access to the host output directory; never recursively chmod input mounts.
+
+A SIF has a read-only root filesystem. Its environment defaults `TMPDIR` to the
+current working directory instead of `/opt/happy-tmp`; run from a writable bound
+work directory. An explicit `--env TMPDIR=/out/scratch` takes precedence. Create
+that directory before execution. This applies to both `singularity run` and
+`singularity exec`. Read-only Docker roots likewise require a writable mounted
+work/output directory and an explicit writable `TMPDIR` (or a tmpfs there).

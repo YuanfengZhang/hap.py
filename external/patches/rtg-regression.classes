@@ -186,5 +186,5 @@ com.rtg.vcf.eval.PhasingEvaluatorTest
 com.rtg.vcf.eval.Vcf2RocplotTest
 com.rtg.vcf.eval.VcfEvalParamsTest
 com.rtg.vcf.eval.VcfRecordTabixCallableTest
-com.rtg.sam.ModernJexlTest
+com.rtg.sam.JexlCompatibilityTest
 com.rtg.sam.WriterDictionaryTest

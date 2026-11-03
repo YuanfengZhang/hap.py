@@ -1,20 +1,16 @@
-# Linux x86_64. Build with --network host when proxy is on host loopback.
+# Linux x86_64 dependency build.
 FROM ubuntu@sha256:186072bba1b2f436cbb91ef2567abca677337cfc786c86e107d25b7072feef0c
-ARG BUILD_PROXY=socks5h://127.0.0.1:7890
-ARG PROXYCHAINS_SERVER="socks5 127.0.0.1 7890"
 ARG PIXI_VERSION=0.70.2
 ARG HARNESS_JOBS=4
 ENV DEBIAN_FRONTEND=noninteractive TMPDIR=/opt/happy-tmp
 RUN mkdir -p /opt/happy-tmp && \
-    apt-get -o Acquire::http::Proxy="$BUILD_PROXY" -o Acquire::https::Proxy="$BUILD_PROXY" -o APT::Update::Error-Mode=any update && \
-    apt-get -o Acquire::http::Proxy="$BUILD_PROXY" -o Acquire::https::Proxy="$BUILD_PROXY" install -y --no-install-recommends \
-      ca-certificates curl proxychains4 bzip2 xz-utils tar bash coreutils \
+    apt-get -o APT::Update::Error-Mode=any update && \
+    apt-get install -y --no-install-recommends \
+      ca-certificates curl bzip2 xz-utils tar bash coreutils \
       build-essential binutils ripgrep git patch && \
-    rm -rf /var/lib/apt/lists/* && \
-    printf 'strict_chain\nproxy_dns\n[ProxyList]\n%s\n' "$PROXYCHAINS_SERVER" > /etc/proxychains4.conf && \
-    ln -s /usr/bin/proxychains4 /usr/local/bin/proxychains
+    rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /opt/pixi-download && \
-    proxychains -q curl -fL --retry 3 \
+    curl -fL --retry 3 \
       "https://github.com/prefix-dev/pixi/releases/download/v${PIXI_VERSION}/pixi-x86_64-unknown-linux-musl.tar.gz" \
       -o /opt/pixi-download/pixi.tar.gz && \
     tar -xzf /opt/pixi-download/pixi.tar.gz -C /usr/local/bin pixi && \

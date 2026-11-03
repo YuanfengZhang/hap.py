@@ -6,10 +6,10 @@ test ! -e hg19.fa
 mkdir -p .work
 WORK=$(mktemp -d "$PWD/.work/hg19.XXXXXXXX")
 trap 'rm -rf "$WORK"' EXIT
-proxychains -q curl -fL "$PREFIX/md5sum.txt" -o "$WORK/md5sum.txt"
+curl -fL "$PREFIX/md5sum.txt" -o "$WORK/md5sum.txt"
 for chromosome in {1..22} X Y M; do
     name="chr${chromosome}.fa.gz"
-    proxychains -q curl -fL "$PREFIX/$name" -o "$WORK/$name"
+    curl -fL "$PREFIX/$name" -o "$WORK/$name"
     expected=$(awk -v name="$name" '$2==name || $2=="*"name {print $1}' "$WORK/md5sum.txt")
     test ${#expected} -eq 32
     printf '%s  %s\n' "$expected" "$WORK/$name" | md5sum -c -

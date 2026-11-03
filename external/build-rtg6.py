@@ -62,7 +62,7 @@ def main() -> None:
             if Path(name).is_absolute() or '..' in Path(name).parts:
                 raise ValueError('Unsafe source archive member')
         archive.extractall(hts)
-    for name, tree in [('htsjdk-6.0.0-rtg.patch', hts), ('rtg-3.13-modern-java.patch', rtg),
+    for name, tree in [('htsjdk-6.0.0-rtg.patch', hts), ('rtg-3.13-java-compat.patch', rtg),
                         ('rtg-3.13-htsjdk6.patch', rtg)]:
         run(name, ['patch', '--batch', '--fuzz=0', '-p1', '-d', str(tree), '-i', str(root / 'patches' / name)])
     output: Path = work / 'install'
@@ -88,7 +88,7 @@ def main() -> None:
     for name, paths, target, classpath in [
         ('overlay', [hts / name for name in changed], overlay, str(lib / '*')),
         ('main', sorted((rtg / 'src/main/java').rglob('*.java')), classes, cp),
-        ('tests', sorted((rtg / 'src/test/java').rglob('*.java')) + [root / 'patches/ModernJexlTest.java'],
+        ('tests', sorted((rtg / 'src/test/java').rglob('*.java')) + [root / 'patches/JexlCompatibilityTest.java'],
          tests, str(classes) + ':' + cp + ':' + str(rtg / 'testLib/spelling.jar')),
     ]:
         argument_file: Path = work / (name + '.args')
@@ -112,7 +112,7 @@ def main() -> None:
     shutil.copyfile(rtg / 'LICENSE.txt', notices / 'RTG-LICENSE.txt')
     shutil.copyfile(rtg / 'installer/README.txt', notices / 'RTG-UPSTREAM-NOTICES.txt')
     shutil.copyfile(root / 'rtg6-dependencies.lock.json', notices / 'build-sources.lock.json')
-    for name in ('htsjdk-6.0.0-rtg.patch', 'rtg-3.13-modern-java.patch', 'rtg-3.13-htsjdk6.patch'):
+    for name in ('htsjdk-6.0.0-rtg.patch', 'rtg-3.13-java-compat.patch', 'rtg-3.13-htsjdk6.patch'):
         shutil.copyfile(root / 'patches' / name, notices / name)
     shutil.copytree(hts, notices / 'overlay-source-context')
     manifest: list[dict] = []
@@ -136,7 +136,7 @@ def main() -> None:
         'htsjdk6_evidence': 'Full exact-version source jar, original file headers and overlay-source-context.',
         'historical_material_only': ['htsjdk-5.0.2/README.upstream'],
         'patches': {name: digest(notices / name) for name in
-                    ('htsjdk-6.0.0-rtg.patch', 'rtg-3.13-modern-java.patch', 'rtg-3.13-htsjdk6.patch')},
+                    ('htsjdk-6.0.0-rtg.patch', 'rtg-3.13-java-compat.patch', 'rtg-3.13-htsjdk6.patch')},
         'unresolved_provenance': ['RPlot', 'jumble', 'overlay file-level authorization',
                                   'snappy compiler and Hadoop CRC32C'],
     }, indent=2) + '\n')
@@ -144,7 +144,7 @@ def main() -> None:
         'source_lock_sha256': digest(root / 'rtg6-dependencies.lock.json'),
         'source_artifacts': lock['artifacts'],
         'patch_sha256': {name: digest(root / 'patches' / name) for name in
-            ('htsjdk-6.0.0-rtg.patch', 'rtg-3.13-modern-java.patch', 'rtg-3.13-htsjdk6.patch')},
+            ('htsjdk-6.0.0-rtg.patch', 'rtg-3.13-java-compat.patch', 'rtg-3.13-htsjdk6.patch')},
         'builder_sha256': digest(Path(__file__)),
         'steps': results,
     }, indent=2) + '\n')

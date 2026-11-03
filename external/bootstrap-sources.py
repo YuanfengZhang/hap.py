@@ -204,7 +204,7 @@ def main() -> None:
                 raise ValueError(f'Invalid reusable archive: {cached}')
             shutil.copyfile(cached, archive)
         else:
-            subprocess.run(['proxychains', '-q', 'curl', '-fL', row['url'], '-o', str(archive)], check=True)
+            subprocess.run(['curl', '-fL', row['url'], '-o', str(archive)], check=True)
         if hashlib.sha256(archive.read_bytes()).hexdigest() != row['sha256']:
             raise ValueError('Archive checksum mismatch')
         destination = base / 'sources' / row['name']

@@ -22,16 +22,16 @@ else
 fi
 
 ##############################################################
-# Modern I/O and launcher-argument regression tests
+# I/O and launcher-argument regression tests
 ##############################################################
 
-MODERN_IO_ROOT=$(mktemp -d "${TMPDIR}/happy-modern-io.XXXXXXXXXX") || exit 1
-"${PYTHON}" "${DIR}/run_modern_io_regression.py"     --bin-dir "${HCDIR}" --work-dir "${MODERN_IO_ROOT}/results"
+IO_ROOT=$(mktemp -d "${TMPDIR}/happy-py3-io.XXXXXXXXXX") || exit 1
+"${PYTHON}" "${DIR}/run_io_regression.py"     --bin-dir "${HCDIR}" --work-dir "${IO_ROOT}/results"
 if [[ $? -ne 0 ]]; then
-    echo "Modern IO regression FAILED! Evidence: ${MODERN_IO_ROOT}"
+    echo "IO regression FAILED! Evidence: ${IO_ROOT}"
     exit 1
 else
-    echo "Modern IO regression SUCCEEDED! Evidence: ${MODERN_IO_ROOT}"
+    echo "IO regression SUCCEEDED! Evidence: ${IO_ROOT}"
 fi
 
 SCMP_REFSPAN_ROOT=$(mktemp -d "${TMPDIR}/happy-scmp-refspan.XXXXXXXXXX") || exit 1
