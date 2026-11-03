@@ -5,6 +5,15 @@ import argparse
 from pathlib import Path
 
 
+def reference_name(reference: Path) -> str:
+    """Derive the expected reference identifier from the input filename."""
+    name: str = reference.name
+    for suffix in ('.fasta.gz', '.fa.gz', '.fasta', '.fa'):
+        if name.endswith(suffix):
+            return name[:-len(suffix)]
+    return name
+
+
 def compare(actual: list[str], expected: list[str], reference: Path) -> None:
     fields: list[list[str]] = [line.split('\t') for line in
         Path(str(reference) + '.fai').read_text().splitlines()]
@@ -12,8 +21,8 @@ def compare(actual: list[str], expected: list[str], reference: Path) -> None:
     if [line for line in actual if line.startswith('##contig=')] != contigs:
         raise AssertionError('Reference dictionary differs')
     if [line for line in actual if line.startswith('##reference=')] != [
-            '##reference=' + str(reference)]:
-        raise AssertionError('Reference path differs')
+            '##reference=' + reference_name(reference)]:
+        raise AssertionError('Reference identifier differs')
     retained_actual: list[str] = [line for line in actual if not line.startswith(('##reference=', '##contig='))]
     retained_expected: list[str] = [line for line in expected if not line.startswith(('##reference=', '##contig='))]
     if retained_actual != retained_expected:

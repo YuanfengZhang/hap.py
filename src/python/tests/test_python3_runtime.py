@@ -64,6 +64,26 @@ class RuntimeTests(unittest.TestCase):
             path.write_text('hello')
             self.assertEqual(runShellCommand(py, '-c', 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).read_text())', str(path)), 'hello\n')
 
+    def test_reference_identifier_suffixes(self) -> None:
+        for suffix in ('.fa', '.fasta', '.fa.gz', '.fasta.gz', '', '.unknown'):
+            expected = 'T2T-CHM13v2.0' + ('.unknown' if suffix == '.unknown' else '')
+            for parent in ('', '/reference 峰 space/'):
+                with self.subTest(suffix=suffix, parent=parent):
+                    self.assertEqual(Tools.reference_name(parent + 'T2T-CHM13v2.0' + suffix), expected)
+        with tempfile.TemporaryDirectory(prefix='reference 峰 ') as directory:
+            for suffix in ('.fa', '.fasta', '.fa.gz', '.fasta.gz'):
+                reference = Path(directory) / ('T2T-CHM13v2.0' + suffix)
+                if suffix.endswith('.gz'):
+                    with pysam.BGZFile(str(reference), 'w') as stream:
+                        stream.write(b'>custom\nACGT\n')
+                else:
+                    reference.write_text('>custom\nACGT\n')
+                pysam.faidx(str(reference))
+                header = io.StringIO()
+                Tools.writeVCFHeader(header, reference=str(reference))
+                self.assertIn('##reference=T2T-CHM13v2.0\n', header.getvalue())
+                self.assertIn('##contig=<ID=custom,length=4>', header.getvalue())
+
     def test_reference_and_bgzf(self):
         with tempfile.TemporaryDirectory() as directory:
             first, second = Path(directory)/'a.fa', Path(directory)/'b.fa'

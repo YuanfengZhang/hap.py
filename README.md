@@ -29,6 +29,7 @@ See [Usage](#usage) for input requirements and current output names.
   - [Complex variant comparison](#complex-variant-comparison)
   - [Variant preprocessing](#variant-preprocessing)
   - [Variant counting](#variant-counting)
+- [Upstream issue fixes](#upstream-issue-fixes)
 - [Usage](#usage)
   - [hap.py](#happy)
   - [pre.py](#prepy)
@@ -192,6 +193,38 @@ the bed intervals need to be expanded to include the padding base just before th
 
 Finally, we produce input data for ROC and precision/recall curves. An
 [example](doc/microbench.md) is included.
+
+## Upstream issue fixes
+
+This customized version includes targeted changes for the following upstream issues:
+
+- [#159](https://github.com/Illumina/hap.py/issues/159): Output VCF reference
+  metadata and contig names/lengths now reflect the actual reference FASTA used
+  for benchmarking, rather than a hard-coded reference dictionary. For example,
+  with `-r T2T-CHM13v2.0.fa`, the output VCF header contains:
+
+  ```vcf
+  ##reference=T2T-CHM13v2.0
+  ##contig=<ID=chr1,length=248387328>
+  ```
+
+  The contig line above assumes that the FASTA index contains `chr1` with length
+  `248387328`; all contig names and lengths follow the supplied FASTA index, not
+  the filename or a fixed GRCh37/GRCh38 dictionary. The `##reference` identifier
+  uses the reference basename without `.fa`, `.fasta`, `.fa.gz`, or `.fasta.gz`;
+  directory paths are omitted and version dots (such as `v2.0`) are preserved.
+- [#160](https://github.com/Illumina/hap.py/issues/160): Preprocessing removes
+  complete duplicate records by default, while retaining records that differ in
+  annotations or sample fields. Use `--keep-duplicates` to retain the historical
+  behavior.
+- [#169](https://github.com/Illumina/hap.py/issues/169): Added GT allele-index and
+  AD field validation to prevent unsafe processing of invalid records. The optional
+  `--output-invalid` flag quarantines supported invalid GT/AD records with reason
+  reports and continues processing valid records; other malformed input still fails.
+- [#179](https://github.com/Illumina/hap.py/issues/179): Hardened precision, recall,
+  and F1 calculations against zero denominators, and corrected numeric ordering of
+  ROC quality thresholds. Precision uses query TP/(TP+FP), excluding unassessed
+  records. These changes address metric edge cases.
 
 ## Usage
 

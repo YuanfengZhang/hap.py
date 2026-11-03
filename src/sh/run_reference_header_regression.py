@@ -7,6 +7,15 @@ from pathlib import Path
 import subprocess
 
 
+def reference_name(reference: Path) -> str:
+    """Derive the expected reference identifier from the input filename."""
+    name: str = reference.name
+    for suffix in ('.fasta.gz', '.fa.gz', '.fasta', '.fa'):
+        if name.endswith(suffix):
+            return name[:-len(suffix)]
+    return name
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bin-dir', type=Path, required=True)
@@ -42,16 +51,16 @@ def main() -> None:
             (line.split('\t') for line in Path(str(root / reference) + '.fai').read_text().splitlines())]
         result['reference_dictionary_exact'] = [line for line in actual if line.startswith('##contig=')] == [
             f'##contig=<ID={name},length={length}>' for name, length in fai]
-        result['reference_path_exact'] = [line for line in actual if line.startswith('##reference=')] == [
-            '##reference=' + str(root / reference)]
+        result['reference_name_exact'] = [line for line in actual if line.startswith('##reference=')] == [
+            '##reference=' + reference_name(root / reference)]
         retained_actual = [line for line in actual if not line.startswith(('##reference=', '##contig='))]
         retained_expected = [line for line in expected if not line.startswith(('##reference=', '##contig='))]
         result['other_metadata_and_records_exact'] = retained_actual == retained_expected
         (work / 'results.json').write_text(json.dumps(results, indent=2) + '\n')
-        if not (all(result[key] for key in ('reference_dictionary_exact', 'reference_path_exact',
+        if not (all(result[key] for key in ('reference_dictionary_exact', 'reference_name_exact',
                                           'other_metadata_and_records_exact'))):
             raise AssertionError(result)
-    print('PASS: actual reference dictionary, reference path, and all other metadata and variant records')
+    print('PASS: actual reference dictionary, reference identifier, and all other metadata and variant records')
 
 
 if __name__ == '__main__':

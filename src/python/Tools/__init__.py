@@ -112,6 +112,15 @@ class LoggingWriter(object):
             logging.log(self.level, message)
 
 
+def reference_name(reference: str) -> str:
+    """Return the FASTA basename without a recognized sequence-file suffix."""
+    name: str = os.path.basename(reference)
+    for suffix in ('.fasta.gz', '.fa.gz', '.fasta', '.fa'):
+        if name.endswith(suffix):
+            return name[:-len(suffix)]
+    return name
+
+
 def writeVCFHeader(filelike, extrainfo='', chrprefix=None, reference: str | None = None) -> None:
     """Write a VCF header using the actual FASTA sequence dictionary.
 
@@ -126,7 +135,7 @@ def writeVCFHeader(filelike, extrainfo='', chrprefix=None, reference: str | None
     extra = extrainfo if isinstance(extrainfo, list) else extrainfo.splitlines()
     if any(line.startswith(('##reference=', '##contig=')) for line in extra):
         raise ValueError('Reference and contig metadata must come from the FASTA, not extrainfo.')
-    infos = ['##fileformat=VCFv4.2', f'##reference={reference}',
+    infos = ['##fileformat=VCFv4.2', f'##reference={reference_name(reference)}',
              '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">']
     infos.extend(extra)
     infos.extend(f'##contig=<ID={name},length={length}>' for name, length in contigs)

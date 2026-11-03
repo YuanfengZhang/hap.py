@@ -51,6 +51,7 @@
 #include <limits>
 
 #include "helpers/BCFHelpers.hh"
+#include <htslib/bgzf.h>
 
 using namespace bcfhelpers;
 
@@ -86,6 +87,35 @@ BOOST_AUTO_TEST_CASE(rocDenominatorBoundaries)
     BOOST_CHECK_CLOSE(level.recall(), 0.5, 0.0001);
     BOOST_CHECK_CLOSE(level.precision(), 0.75, 0.0001);
     BOOST_CHECK_CLOSE(level.fScore(), 0.6, 0.0001);
+}
+
+BOOST_AUTO_TEST_CASE(referenceIdentifierSuffixes)
+{
+    const char *tmp = std::getenv("TMPDIR");
+    const boost::filesystem::path base = tmp ? tmp : ".";
+    const auto dir = base / boost::filesystem::unique_path("reference-name-%%%%-%%%%");
+    boost::filesystem::create_directories(dir);
+    for (const std::string suffix : {".fa", ".fasta", ".fa.gz", ".fasta.gz", "", ".unknown"})
+    {
+        const auto fasta = (dir / ("T2T-CHM13v2.0" + suffix)).string();
+        const std::string sequence = ">custom\nACGT\n";
+        if (suffix.size() >= 3 && suffix.compare(suffix.size() - 3, 3, ".gz") == 0)
+        {
+            BGZF *out = bgzf_open(fasta.c_str(), "w");
+            BOOST_REQUIRE(out);
+            BOOST_REQUIRE_EQUAL(bgzf_write(out, sequence.data(), sequence.size()), sequence.size());
+            BOOST_REQUIRE_EQUAL(bgzf_close(out), 0);
+        }
+        else { std::ofstream out(fasta); out << sequence; }
+        auto header = ph(bcf_hdr_init("w"));
+        bcfHeaderFromReference(header.get(), fasta.c_str());
+        auto record = bcf_hdr_get_hrec(header.get(), BCF_HL_GEN, "reference", nullptr, nullptr);
+        BOOST_REQUIRE(record);
+        const std::string expected = "T2T-CHM13v2.0" + (suffix == ".unknown" ? suffix : "");
+        BOOST_CHECK_EQUAL(record->value, expected);
+        BOOST_CHECK_EQUAL(bcf_hdr_name2id(header.get(), "custom"), 0);
+    }
+    boost::filesystem::remove_all(dir);
 }
 
 BOOST_AUTO_TEST_CASE(referenceDictionaryRoundtrip)

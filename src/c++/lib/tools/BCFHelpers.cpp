@@ -208,7 +208,19 @@ namespace bcfhelpers
             throw importexception("A readable FASTA reference is required for the output sequence dictionary");
         std::unique_ptr<faidx_t, decltype(&fai_destroy)> index(fai_load(reference), &fai_destroy);
         if (!index) throw importexception("Cannot load FASTA reference/index: " + std::string(reference));
-        bcf_hdr_append(header, ("##reference=" + std::string(reference)).c_str());
+        std::string reference_name(reference);
+        const auto separator = reference_name.find_last_of('/');
+        if (separator != std::string::npos) reference_name.erase(0, separator + 1);
+        for (const std::string suffix : {".fasta.gz", ".fa.gz", ".fasta", ".fa"})
+        {
+            if (reference_name.size() >= suffix.size() &&
+                reference_name.compare(reference_name.size() - suffix.size(), suffix.size(), suffix) == 0)
+            {
+                reference_name.resize(reference_name.size() - suffix.size());
+                break;
+            }
+        }
+        bcf_hdr_append(header, ("##reference=" + reference_name).c_str());
         for (int i = 0; i < faidx_nseq(index.get()); ++i)
         {
             const char *name = faidx_iseq(index.get(), i);

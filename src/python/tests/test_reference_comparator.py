@@ -27,7 +27,7 @@ class ReferenceComparatorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=root / '.work', prefix='reference-contract-') as directory:
             reference: Path = Path(directory) / 'ref.fa'
             Path(str(reference) + '.fai').write_text('chrA\t10\t0\t10\t11\nchrB\t20\t0\t20\t21\n')
-            actual: list[str] = ['##reference=' + str(reference), '##contig=<ID=chrA,length=10>',
+            actual: list[str] = ['##reference=ref', '##contig=<ID=chrA,length=10>',
                                  '##contig=<ID=chrB,length=20>', '#CHROM\tPOS', 'chrA\t1']
             expected: list[str] = ['##reference=hg19', '##contig=<ID=old,length=1>', '#CHROM\tPOS', 'chrA\t1']
             module.compare(actual, expected, reference)
