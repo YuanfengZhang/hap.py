@@ -201,7 +201,7 @@ This customized version includes targeted changes for the following upstream iss
 
 - [#159](https://github.com/Illumina/hap.py/issues/159): Output VCF reference
   metadata and contig names/lengths now reflect the actual reference FASTA used
-  for benchmarking, rather than a hard-coded reference dictionary. For example,
+  for benchmarking. For example,
   with `-r T2T-CHM13v2.0.fa`, the output VCF header contains:
 
   ```vcf
@@ -210,8 +210,8 @@ This customized version includes targeted changes for the following upstream iss
   ```
 
   The contig line above assumes that the FASTA index contains `chr1` with length
-  `248387328`; all contig names and lengths follow the supplied FASTA index, not
-  the filename or a fixed GRCh37/GRCh38 dictionary. The `##reference` identifier
+  `248387328`. All contig names and lengths come from the FASTA index.
+  The `##reference` identifier
   uses the reference basename without `.fa`, `.fasta`, `.fa.gz`, or `.fasta.gz`;
   directory paths are omitted and version dots (such as `v2.0`) are preserved.
 - [#160](https://github.com/Illumina/hap.py/issues/160): Preprocessing removes
@@ -252,7 +252,7 @@ hap.py truth.vcf.gz query.vcf.gz \
 
 - `-r`: reference FASTA; specify it explicitly for reproducible runs.
 - `-f`: confident regions; query calls outside them are classified as UNK.
-- `-o`: output prefix, not an output directory.
+- `-o`: output filename prefix.
 - `--engine`: `xcmp` (default), `vcfeval`, `scmp-somatic`, or `scmp-distance`.
 - `-V`: write the annotated comparison VCF; it is not written by default.
 - `--roc QUAL`: select the quality field for threshold tables (QUAL is default).
@@ -327,7 +327,7 @@ quarantine and deduplication flags are not som.py options.
 ## Workflow integration
 
 For [nf-core/variantbenchmarking](https://github.com/nf-core/variantbenchmarking),
-changing the host `PATH` does not replace workflow task containers. Configure
+configure
 `HAPPY_HAPPY` and `HAPPY_PREPY` to use an image built from this source revision,
 following the workflow's configuration and container-registry rules.
 
@@ -346,18 +346,10 @@ process {
 }
 ```
 
-The SIF path is a placeholder, not a supplied artifact. Set any module-specific
-version override to the actual output of `hap.py --version`, rather than copying
-a build date from documentation. Load this configuration after site settings
-with `-c`, keeping the workflow's required inputs and analysis parameters.
-
-Images, inputs, and work directories must be accessible on every execution node.
-For Docker, use an image reference available to each node and compatible with
-the workflow's registry settings. Nextflow uses `singularity exec`, not the SIF
-runscript. Use a writable scratch directory and retain the engine arguments
-required by the analysis. Verify task `.command.run` files and version reports;
-use a fresh work directory when validating a changed toolchain. Tool-level tests
-do not establish full workflow equivalence.
+Replace the example SIF path with your image path. Set any module-specific
+version override to the output of `hap.py --version`. Load this configuration
+after site settings with `-c` and include the workflow's required inputs and
+analysis parameters.
 
 ## Installation
 
@@ -409,9 +401,9 @@ sudo env SINGULARITY_TMPDIR="$PWD/.work/singularity/tmp" \
   singularity build hap.py-py3.sif Singularity.linux64.def
 ```
 
-The definition downloads build dependencies and compiles hap.py on Linux x86-64.
-It does not require Docker or a prebuilt hap.py image. `Singularity.def` provides
-the same source build.
+The definition downloads build dependencies and compiles hap.py on Linux x86-64
+without Docker or a prebuilt hap.py image. You can also build from
+`Singularity.def`.
 
 Run hap.py with the same input and output directories:
 
@@ -432,7 +424,7 @@ to run another installed tool.
 
 ### Source installation
 
-The build uses **CPython 3.14**, an explicitly provisioned dependency prefix, and
+The build uses CPython 3.14, a preconfigured dependency prefix, and
 private modules in `prefix/lib/hap.py`. `external/bootstrap.sh` provisions the
 current dependencies; `install.py --help` documents installation options.
 Configuration does not download software or execute Git. See the
@@ -451,22 +443,20 @@ cmake --build .work/build --parallel 4
 cmake --install .work/build --prefix "$PWD/install"
 ```
 
-Preserve the absolute dependency prefixes: moving the installation directory
-alone is insufficient. For a sanitizer build, use a separate build directory
+Keep dependencies at their configured absolute paths when moving the
+installation directory. For a sanitizer build, use a separate build directory
 with `-DCMAKE_BUILD_TYPE=Debug -DHAPPY_SANITIZERS=ON`. Known historical golden-suite
-differences remain; a successful build or targeted test run does not imply that
-all historical integration tests pass.
+differences remain, and some historical integration tests still fail.
 
 ## System requirements
 
 CMake >=3.24, a C++17 compiler, Boost 1.92, HTSlib/bcftools/samtools 1.24,
 JsonCpp 1.9.8, zlib 1.3.2, and the packages in `happy.requirements.txt`.
-The tested platform is Linux x86-64; historic claims for CentOS 5/6 or Ubuntu
-12.04 do not establish support for this toolchain. Windows and macOS have not
-been validated during this migration.
+The tested platform is Linux x86-64. This toolchain has not been validated on
+CentOS 5/6, Ubuntu 12.04, Windows, or macOS.
 
-A reference need not be human or use chr-prefixed names. The FASTA/FAI sequence
-dictionary, not an hg19/hg38 label, is authoritative. Reference precedence is
+References can use any species and contig naming scheme. Sequence names and
+lengths come from the FASTA/FAI sequence dictionary. Reference precedence is
 explicit `-r`, then `HGREF`, then `HG19`, then the documented fallback; an invalid
 explicit reference is an error. Full legacy integration tests require the exact
-matching hg19 reference, not an arbitrary genome with similar contig names.
+matching hg19 reference.

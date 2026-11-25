@@ -1,15 +1,14 @@
-Building and Running Containers
+Building and running containers
 ==============================
 
-This document describes how to build hap.py from source with Docker or
-Singularity, test the image, and run a variant comparison. Both images include
+Docker and Singularity images built from this source include
 Python 3, hap.py, bcftools, samtools, RTG Tools, and Java.
 
 ## Requirements
 
 Build on Linux x86-64 using Docker or Git and Singularity. Network access is
 required to retrieve the base image and dependencies. Reference genomes and
-benchmark datasets are supplied separately when running a comparison.
+benchmark datasets must be provided when running a comparison.
 
 ## Build with Docker
 
@@ -145,7 +144,7 @@ The `-V` option requests an annotated comparison VCF.
 
 This example uses RTG vcfeval. To use hap.py's default comparison engine, replace
 `--engine vcfeval` with `--engine xcmp`. The `scmp-somatic` engine compares allele
-presence rather than haplotype equivalence.
+presence without comparing haplotypes.
 
 The `--user` option writes files with the current user's UID and GID. The host
 output and scratch directories must be writable by that user. `TMPDIR` and
@@ -165,9 +164,9 @@ sudo env SINGULARITY_TMPDIR="$PWD/.work/singularity/tmp" \
   singularity build hap.py-py3.sif Singularity.linux64.def
 ```
 
-The definition downloads build dependencies and compiles hap.py on Linux x86-64.
-It does not require Docker or a prebuilt hap.py image. `Singularity.def` provides
-the same source build.
+The definition downloads build dependencies and compiles hap.py on Linux x86-64
+without Docker or a prebuilt hap.py image. You can also build from
+`Singularity.def`.
 
 Run the comparison with the same input and output mounts:
 
