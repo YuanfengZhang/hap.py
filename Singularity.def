@@ -1,5 +1,21 @@
-Bootstrap: docker-daemon
-From: ghcr.io/yuanfengzhang/hap.py:v0.3.16-alpha
+Bootstrap: docker
+From: ubuntu@sha256:186072bba1b2f436cbb91ef2567abca677337cfc786c86e107d25b7072feef0c
+
+# Run from the repository root; copy tracked source, not local build caches.
+%setup
+    set -eu
+    mkdir -p "$SINGULARITY_ROOTFS/opt/happy-source"
+    git -c safe.directory="$PWD" ls-files -z > "$SINGULARITY_ROOTFS/opt/source-files"
+    if ! git -c safe.directory="$PWD" ls-files --error-unmatch external/build-singularity.sh >/dev/null 2>&1; then
+        printf 'external/build-singularity.sh\0' >> "$SINGULARITY_ROOTFS/opt/source-files"
+    fi
+    tar --null -T "$SINGULARITY_ROOTFS/opt/source-files" -cf "$SINGULARITY_ROOTFS/opt/source.tar"
+    tar -xf "$SINGULARITY_ROOTFS/opt/source.tar" -C "$SINGULARITY_ROOTFS/opt/happy-source"
+    rm "$SINGULARITY_ROOTFS/opt/source-files" "$SINGULARITY_ROOTFS/opt/source.tar"
+
+%post
+    unset LD_PRELOAD
+    bash /opt/happy-source/external/build-singularity.sh
 
 %labels
     org.opencontainers.image.title hap.py

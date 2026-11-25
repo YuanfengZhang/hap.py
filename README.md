@@ -37,6 +37,7 @@ See [Usage](#usage) for input requirements and current output names.
 - [Workflow integration](#workflow-integration)
 - [Installation](#installation)
   - [Docker](#docker)
+  - [Singularity](#singularity)
   - [Source installation](#source-installation)
 - [System requirements](#system-requirements)
 
@@ -373,7 +374,7 @@ To build from source, build the dependency image before the application image:
 ```bash
 docker build -f Dockerfile.dependencies -t custom-happy-dependencies:build .
 
-docker build --network none \
+docker build \
   --build-arg DEPENDENCY_IMAGE=custom-happy-dependencies:build \
   --build-arg HAPPY_VERSION="$(git rev-parse --short HEAD)" \
   -t custom-happy:build .
@@ -384,7 +385,7 @@ the default help command. For example, from a directory containing `data/`:
 
 ```bash
 mkdir -p results/scratch
-docker run --rm --pull never --network none \
+docker run --rm \
   --user "$(id -u):$(id -g)" --workdir /out \
   -e TMPDIR=/out/scratch -e RTG_MEM=4G \
   -v "$PWD/data:/data:ro" -v "$PWD/results:/out" \
@@ -395,11 +396,39 @@ docker run --rm --pull never --network none \
   --scratch-prefix /out/scratch -V
 ```
 
-Mount the reference FASTA/FAI, VCFs/indexes, and BED under `data/`. A SIF built
-using this repository's definitions has a hap.py runscript, so
-`singularity run IMAGE.sif TRUTH QUERY ...` takes hap.py arguments directly;
-`singularity exec IMAGE.sif hap.py ...` explicitly selects the executable.
-Adapt the definition's base image to the image you built before creating a SIF.
+Mount the reference FASTA/FAI, VCFs/indexes, and BED under `data/`.
+
+### Singularity
+
+Build directly from source from the repository root (Git and Singularity required):
+
+```bash
+mkdir -p .work/singularity/tmp .work/singularity/cache
+sudo env SINGULARITY_TMPDIR="$PWD/.work/singularity/tmp" \
+  SINGULARITY_CACHEDIR="$PWD/.work/singularity/cache" \
+  singularity build hap.py-py3.sif Singularity.linux64.def
+```
+
+The definition downloads build dependencies and compiles hap.py on Linux x86-64.
+It does not require Docker or a prebuilt hap.py image. `Singularity.def` provides
+the same source build.
+
+Run hap.py with the same input and output directories:
+
+```bash
+mkdir -p results/scratch
+singularity run --cleanenv \
+  --env TMPDIR=/out/scratch --env RTG_MEM=4G \
+  --bind "$PWD/data:/data:ro" --bind "$PWD/results:/out" --pwd /out \
+  hap.py-py3.sif \
+  /data/truth.vcf.gz /data/query.vcf.gz \
+  -r /data/reference.fa -f /data/confident.bed \
+  -o /out/benchmark --engine vcfeval --threads 4 \
+  --scratch-prefix /out/scratch -V
+```
+
+`singularity run` invokes hap.py. Use `singularity exec IMAGE.sif TOOL ...`
+to run another installed tool.
 
 ### Source installation
 
